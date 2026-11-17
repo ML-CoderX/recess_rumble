@@ -19,9 +19,10 @@ const offlineVersion = createHash("sha256").update(soloPage).digest("hex").slice
 const types = {
   html: "text/html; charset=utf-8", js: "text/javascript; charset=utf-8",
   css: "text/css; charset=utf-8", svg: "image/svg+xml", png: "image/png",
-  webp: "image/webp", woff2: "font/woff2", mp3: "audio/mpeg", ogg: "audio/ogg"
+  webp: "image/webp", woff2: "font/woff2", mp3: "audio/mpeg", ogg: "audio/ogg",
+  webmanifest: "application/manifest+json; charset=utf-8"
 };
-const files = /^\/(?:public\/[a-z0-9-]+\.(?:js|css)|shared\/[a-z0-9-]+\.js|assets\/(?:sprites|fonts|maps)\/[a-z0-9_-]+\.(?:svg|png|webp|woff2)|assets\/sounds\/[a-z0-9_-]+\.(?:mp3|ogg))$/i;
+const files = /^\/(?:public\/[a-z0-9-]+\.(?:js|css|svg|png|webmanifest)|shared\/[a-z0-9-]+\.js|assets\/(?:sprites|fonts|maps)\/[a-z0-9_-]+\.(?:svg|png|webp|woff2)|assets\/sounds\/[a-z0-9_-]+\.(?:mp3|ogg))$/i;
 const server = createServer(async (req, res) => {
   const path = req.url?.split("?")[0];
   const file = path === "/" ? "public/index.html" : files.test(path) ? path.slice(1) : null;

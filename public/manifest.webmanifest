@@ -1,0 +1,15 @@
+{
+  "id": "/",
+  "name": "Recess Rumble",
+  "short_name": "Recess Rumble",
+  "start_url": "/",
+  "scope": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#14111b",
+  "theme_color": "#14111b",
+  "icons": [
+    { "src": "/public/app-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/public/app-icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

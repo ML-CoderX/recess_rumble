@@ -113,7 +113,8 @@ export async function buildSoloPage(fighters, audio = null, maps = null) {
     ? { ...map, background: { ...map.background, path: await embedSprite(map.background.path) } }
     : map));
   const mapConfig = JSON.stringify(stages).replaceAll("<", "\\u003c");
-  return html.replace('<link rel="stylesheet" href="/public/styles.css">', () => "<style>" + css + "</style>")
+  return html.replace(/  <link rel="manifest" href="\/public\/manifest\.webmanifest">\r?\n/, "")
+    .replace('<link rel="stylesheet" href="/public/styles.css">', () => "<style>" + css + "</style>")
     .replace('<script type="module" src="/public/app.js"></script>',
       () => '<script>window.offlineFighters = ' + config + '; window.offlineAudio = ' + sounds +
         '; window.offlineMaps = ' + mapConfig + ';</script>\n  <script type="module" src="' + app + '"></script>');

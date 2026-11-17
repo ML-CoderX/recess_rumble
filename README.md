@@ -32,6 +32,8 @@ If another device cannot connect, check that the browser uses `http://` and the 
 
 ## Play
 
+On a phone, tap **Start** or **Start muted** to enter fullscreen and lock landscape when the browser supports both. If the rotate hint appears, turn the phone sideways. On supported browsers, adding the hosted game to your home screen lets it launch in landscape fullscreen from its icon.
+
 | | Move | Aim and attack | Super |
 | --- | --- | --- | --- |
 | Desktop | WASD or arrow keys | Aim with the mouse, left-click to attack | Space |

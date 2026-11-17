@@ -2,6 +2,7 @@ import { LIMIT, clamp, pickMap } from "/shared/arena.js";
 import { Battle } from "/shared/battle.js";
 import { ArenaView, drawMapPreview, preload } from "./render.js";
 import { ArenaAudio } from "./arena-audio.js";
+import { enterMobilePresentation } from "./presentation.js";
 
 const $ = id => document.getElementById(id);
 const element = (tag, value, className) => {
@@ -419,9 +420,10 @@ function refreshAudioSettings() {
   $("audio-mute").checked = audio.settings.muted;
 }
 
-async function beginAudio(mute) {
+async function beginAudio(event, mute) {
   if (mute) audio.set("muted", true);
   const unlocked = audio.unlock();
+  void enterMobilePresentation(event);
   $("audio-start").close();
   try {
     await unlocked;
@@ -430,8 +432,8 @@ async function beginAudio(mute) {
   } catch { /* the game can continue before the device allows audio */ }
 }
 
-$("audio-unlock").addEventListener("click", () => beginAudio(false));
-$("audio-silent").addEventListener("click", () => beginAudio(true));
+$("audio-unlock").addEventListener("click", event => beginAudio(event, false));
+$("audio-silent").addEventListener("click", event => beginAudio(event, true));
 $("audio-start").addEventListener("cancel", event => event.preventDefault());
 for (const id of ["audio-menu", "audio-match"]) {
   $(id).addEventListener("click", () => {
