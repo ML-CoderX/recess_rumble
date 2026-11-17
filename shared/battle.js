@@ -233,31 +233,54 @@ export class Battle {
 
   driveBot(p, enemies, now, index) {
     const target = closest(p, enemies);
-    if (!target) return;
+    if (!target) {
+      const spawns = this.map.spawns;
+      let [x, y] = spawns[p.roam];
+      if (distance(p, { x, y }) < 55) {
+        p.roam = (p.roam + 1) % spawns.length;
+        [x, y] = spawns[p.roam];
+      }
+      const waypoint = nextWaypoint(this.map, p, { x, y });
+      const angle = waypoint ? Math.atan2(waypoint.y - p.y, waypoint.x - p.x) : p.angle;
+      p.input = { ...neutralInput(), angle, x: Math.cos(angle) * 0.8, y: Math.sin(angle) * 0.8 };
+      return;
+    }
     const { config } = p;
     const dist = distance(p, target);
     const angle = Math.atan2(target.y - p.y, target.x - p.x);
     const melee = config.attack.type === "slam";
     const ranged = config.class.toLowerCase() === "ranged";
-    const canSee = clearPath(p, target, 5);
+    const canSee = clearPath(this.map, p, target, 5);
     const range = moveRange(config, config.attack);
-    const superReady = p.charge >= 100 && dist <= moveRange(config, config.super);
+    const superReady = p.charge >= 100 && dist <= moveRange(config, config.super) &&
+      (canSee || config.super.type === "lob");
     const desired = ranged ? range * 0.63 : Math.min(78, range * 0.75);
     const side = Math.floor(now / 3 + index) % 2 ? 1 : -1;
     let approach = angle + (ranged && canSee && dist < desired - 25 ? Math.PI : 0);
     if (canSee && Math.abs(dist - desired) < 27) approach = angle + Math.PI / 2 * side;
     approach += Math.sin(now * 2 + index) * 0.15;
     const dodge = this.dodgeDirection(p);
-    if (dodge !== undefined) {
+    const quiz = this.quizzes.find(q => q.zone && inside(p, q.zone, 3));
+    const threatRange = moveRange(target.config, target.config.attack);
+    const seekCover = canSee && !superReady && p.hp < p.maxHp * 0.61 &&
+      (dodge !== undefined || threatRange > 170) && dist > 125 && dist < threatRange + 50;
+    const cover = seekCover && findCover(this.map, p, target);
+    const coverProtected = !canSee && p.hp < p.maxHp * 0.61 && dist > 180;
+    const waypoint = cover || (!canSee && !coverProtected && nextWaypoint(this.map, p, target));
+    if (quiz) {
+      approach = Math.atan2(p.y - quiz.zone.y - quiz.zone.h / 2, p.x - quiz.zone.x - quiz.zone.w / 2);
+    } else if (dodge !== undefined) {
       approach = dodge;
-    } else if (!canWalk(p, approach, 70)) {
+    } else if (waypoint) {
+      approach = Math.atan2(waypoint.y - p.y, waypoint.x - p.x);
+    }
+    if (!canWalk(this.map, p, approach, 52)) {
       const options = [0.7, -0.7, 1.35, -1.35, 2, -2, Math.PI];
-      const turn = options.find(change => canWalk(p, approach + change, 70));
+      const turn = options.find(change => canWalk(this.map, p, approach + change, 52));
       if (turn !== undefined) approach += turn;
     }
-    const threatRange = moveRange(target.config, target.config.attack);
     const nap = config.passive?.type === "nap" && p.hp < p.maxHp && !superReady &&
-      dodge === undefined && (dist > threatRange + 85 || !canSee && dist > 270);
+      !quiz && dodge === undefined && (dist > threatRange + 85 || coverProtected);
     const speed = nap ? 0 : dodge === undefined ? 0.85 : 1;
     const aim = angle + (Math.random() * 2 - 1) * this.difficulty.aim;
     p.input.x = Math.cos(approach) * speed;
@@ -273,8 +296,8 @@ export class Battle {
   movePlayers(now, dt) {
     for (const [index, p] of this.players.entries()) {
       if (!p.hp) continue;
-      const enemies = this.players.filter(other => other !== p && other.hp);
       if (p.bot && now >= p.botThink) {
+        const enemies = this.players.filter(other => other !== p && other.hp && !this.hiddenFrom(other, p, now));
         this.driveBot(p, enemies, now, index);
         p.botThink = now + this.difficulty.reaction;
       } else if (!p.bot && now - p.lastInput > 0.45) {
@@ -282,24 +305,25 @@ export class Battle {
       }
       const { input, config } = p;
       const stunned = p.stunUntil > now;
-      p.moving = !stunned && Math.hypot(input.x, input.y) > 0.08;
       if (!stunned) p.angle = input.angle;
       const slow = this.stickers.reduce((factor, sticker) =>
         sticker.owner !== p.id && distance(p, sticker) < sticker.r + R * 0.65
           ? Math.min(factor, sticker.slow) : factor, 1);
       if (slow < 1 && !p.onSticker) this.audio("slow", p, now);
       p.onSticker = slow < 1;
-      if (p.moving) {
-        const length = Math.max(1, Math.hypot(input.x, input.y));
-        const speed = (115 + config.stats.speed * 14) * slow * dt / length;
-        p.x += input.x * speed;
-        p.y += input.y * speed;
-        this.resolveWalls(p);
-        p.lastActive = now;
-      }
+      const length = Math.max(1, Math.hypot(input.x, input.y));
+      const boost = now < p.boostUntil ? p.boost : 1;
+      const speed = stunned ? 0 : (115 + config.stats.speed * 14) * slow * boost / length;
+      const slide = this.map.hazards.find(h => h.type === "slide" && h.zones.some(zone => inside(p, zone)));
+      const grip = slide && !stunned ? 1 - Math.exp(-slide.grip * dt) : 1;
+      p.vx += (input.x * speed - p.vx) * grip;
+      p.vy += (input.y * speed - p.vy) * grip;
+      p.moving = Math.hypot(p.vx, p.vy) > 8;
+      if (p.moving) this.move(p, p.vx * dt, p.vy * dt);
+      if (p.moving) p.lastActive = now;
       const passive = config.passive;
       p.napping = !stunned && passive?.type === "nap" && now - p.lastActive >= passive.delay;
-      if (p.napping) p.hp = Math.min(p.maxHp, p.hp + passive.healing * dt);
+      if (p.napping) p.hp = Math.min(p.maxHp, p.hp + passive.healing * (this.map.napHealMultiplier ?? 1) * dt);
       if (passive?.type === "sticker" && now >= p.nextSticker) {
         this.audio("sticker", p, now);
         this.stickers.push({ id: ++this.serial, owner: p.id, x: p.x, y: p.y,
@@ -313,12 +337,11 @@ export class Battle {
         if (!other.hp) continue;
         const d = distance(p, other);
         if (d >= R * 2) continue;
-        const a = d > EPSILON ? Math.atan2(other.y - p.y, other.x - p.x) : 0;
+        const a = d > 0.001 ? Math.atan2(other.y - p.y, other.x - p.x) : 0;
         const push = (R * 2 - d) / 2;
-        Object.assign(p, stepToward(p, a + Math.PI, push));
-        Object.assign(other, stepToward(other, a, push));
-        this.resolveWalls(p);
-        this.resolveWalls(other);
+        const dx = Math.cos(a) * push, dy = Math.sin(a) * push;
+        this.move(p, -dx, -dy);
+        this.move(other, dx, dy);
       }
     }
     for (const p of this.players) {
@@ -336,12 +359,59 @@ export class Battle {
     }
   }
 
-  resolveWalls(p) {
-    p.x = clamp(p.x, INSET + R, WIDTH - INSET - R);
-    p.y = clamp(p.y, INSET + R, HEIGHT - INSET - R);
-    for (const b of BUMPERS) {
-      if (distance(p, b) >= R + b.r) continue;
-      Object.assign(p, stepToward(b, Math.atan2(p.y - b.y, p.x - b.x), R + b.r + EPSILON));
+  move(p, dx, dy) {
+    const { width, height, inset } = this.map.size;
+    for (const [axis, velocity, delta, limit] of [["x", "vx", dx, width], ["y", "vy", dy, height]]) {
+      if (!delta) continue;
+      const end = { ...p, [axis]: clamp(p[axis] + delta, inset + R, limit - inset - R) };
+      const t = Math.min(1, ...this.map.obstacles.map(box => rectangleImpact(p, end, box, R)));
+      const moved = (end[axis] - p[axis]) * Math.max(0, t < 1 ? t - 0.001 : 1);
+      p[axis] += moved;
+      if (Math.abs(moved - delta) > 0.001) p[velocity] = 0;
+    }
+  }
+
+  hiddenFrom(player, viewer, now) {
+    if (!viewer?.hp || !player.hp || player === viewer || player.revealedUntil > now) return false;
+    const d = distance(player, viewer);
+    const bush = this.map.bushes.find(box => inside(player, box));
+    if (bush && d > 85 && !inside(viewer, bush)) return true;
+    return this.map.hazards.some(h => h.type === "dark" && d > h.visibility &&
+      h.zones.some(zone => inside(player, zone) || inside(viewer, zone)));
+  }
+
+  updateMap(now) {
+    for (const q of this.quizzes) {
+      if (now >= q.endsAt) {
+        q.zone = null;
+        q.warningAt = now + interval(q.config.interval);
+        q.endsAt = Infinity;
+      }
+      if (now < q.warningAt) continue;
+      if (!q.zone) {
+        q.zone = q.config.zones[Math.floor(Math.random() * q.config.zones.length)];
+        q.liveAt = now + q.config.warning;
+        q.endsAt = q.liveAt + q.config.duration;
+        q.nextHit = q.liveAt;
+      }
+      if (now < q.nextHit) continue;
+      q.nextHit = now + q.config.tick;
+      for (const p of this.players) {
+        if (p.hp && inside(p, q.zone)) this.damage(null, p, q.config.damage, now, 0, 0, "hazard");
+      }
+    }
+    for (const pickup of this.pickups) {
+      if (now < pickup.readyAt) continue;
+      const target = this.players.find(p => p.hp && distance(p, pickup) < R + 15 &&
+        (pickup.type !== "heal" || p.hp < p.maxHp));
+      if (!target) continue;
+      if (pickup.type === "heal") target.hp = Math.min(target.maxHp, target.hp + pickup.amount);
+      else {
+        target.boost = pickup.amount;
+        target.boostUntil = now + pickup.duration;
+      }
+      this.audio("pickup", target, now);
+      pickup.readyAt = now + pickup.respawn;
     }
   }
 
@@ -356,10 +426,11 @@ export class Battle {
     this.feed = this.feed.filter(event => event.until > now);
     this.stickers = this.stickers.filter(sticker => sticker.until > now);
     this.movePlayers(now, dt);
+    this.updateMap(now);
     this.projectiles = this.projectiles.filter(shot => {
       const step = Math.min(shot.remaining, Math.hypot(shot.vx, shot.vy) * dt);
       const end = stepToward(shot, Math.atan2(shot.vy, shot.vx), step);
-      let first = Math.min(Infinity, ...BUMPERS.map(b => collideSegment(shot, end, b, b.r + 7)));
+      let first = Math.min(Infinity, ...this.map.obstacles.map(box => rectangleImpact(shot, end, box, 7)));
       let target = null;
       for (const p of this.players) {
         if (!p.hp || p === shot.owner) continue;
@@ -370,8 +441,7 @@ export class Battle {
       if (first !== Infinity) return false;
       Object.assign(shot, end);
       shot.remaining -= step;
-      return shot.remaining > EPSILON && end.x > INSET && end.x < WIDTH - INSET
-        && end.y > INSET && end.y < HEIGHT - INSET;
+      return shot.remaining > 0.001 && onFloor(end, this.map.size);
     });
     this.lobs = this.lobs.filter(lob => {
       if (now < lob.lands) return true;
@@ -399,19 +469,28 @@ export class Battle {
       scores: ranked.map(({ id, name, kos, hp }) => ({ id, name, kos, alive: hp > 0 })) };
   }
 
-  snapshot(now) {
+  snapshot(now, viewerId) {
+    const viewer = this.players.find(p => p.id === viewerId);
     return {
-      type: "battle", now, startsAt: this.startsAt, endsAt: this.endsAt, result: this.result,
-      players: this.players.map(p => ({
+      type: "battle", map: this.map.id, alive: this.players.filter(p => p.hp).length,
+      now, startsAt: this.startsAt, endsAt: this.endsAt, result: this.result,
+      quizzes: this.quizzes.filter(q => q.zone).map(q => ({ ...q.zone, liveAt: q.liveAt, endsAt: q.endsAt })),
+      pickups: this.pickups.filter(p => now >= p.readyAt).map(({ x, y, type }) => ({ x, y, type })),
+      players: this.players.filter(p => !this.hiddenFrom(p, viewer, now)).map(p => ({
         id: p.id, name: p.name, fighter: p.fighter, color: p.color, bot: !!p.bot,
         x: p.x, y: p.y, hp: Math.ceil(p.hp), maxHp: p.maxHp, angle: p.angle, kos: p.kos,
         charge: p.charge, napping: p.napping, stunned: p.stunUntil > now,
+        hidden: p.revealedUntil <= now && this.map.bushes.some(box => inside(p, box)),
+        boosted: p.boostUntil > now,
         state: !p.hp ? "defeated" : p.hurtUntil > now ? "hurt"
           : p.actionUntil > now ? p.action : p.moving ? "walk" : "idle"
       })),
       projectiles: this.projectiles.map(({ id, x, y, vx, vy }) => ({ id, x, y, vx, vy })),
       stickers: this.stickers.map(({ id, x, y, r, until }) => ({ id, x, y, r, until })),
-      effects: this.effects, feed: this.feed, audio: this.audioEvents
+      effects: this.effects, feed: this.feed, audio: this.audioEvents.filter(event => {
+        const source = this.players.find(p => p.id === event.player);
+        return event.type !== "ready" && event.type !== "pickup" || !this.hiddenFrom(source, viewer, now);
+      })
     };
   }
 }
