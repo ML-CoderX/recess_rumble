@@ -37,9 +37,23 @@ If another device cannot connect, check that the browser uses `http://` and the 
 | Desktop | WASD or arrow keys | Aim with the mouse, left-click to attack | Space |
 | Touch | Drag the left stick | Drag and hold the right stick in the direction you want to fire | Tap the lit Super button |
 
-Hits with your small attack charge your super. For Appo Smash, point at the landing spot with the mouse, or tilt the right stick to set direction and distance before tapping Super. Muawiz heals after two seconds without moving or attacking and takes more damage while napping. Firas leaves stickers that slow opponents who cross them. Bumpers block ordinary projectiles and grabs. Appo Smash and Laser Arm can clear cover.
+Hits with your small attack charge your super. For Appo Smash, point at the landing spot with the mouse, or tilt the right stick to set direction and distance before tapping Super. Muawiz heals after two seconds without moving or attacking and takes more damage while napping. Firas leaves stickers that slow opponents who cross them. Furniture blocks movement, projectiles, grabs, and Laser Arm. Appo Smash can arc over furniture.
 
 The last fighter standing wins. If two minutes elapse first, the most KOs wins, with a draw on equal KOs. Knocked-out players spectate the rest of the match. With takeovers enabled, a bot continues playing a disconnected fighter with the same position, health, super charge, and score. Otherwise the server removes their fighter. If the host leaves, the next connected player becomes host.
+
+## Maps
+
+Choose **Map** in Solo setup or in the multiplayer lobby as host. **Random** draws a map when the round starts.
+
+- **Classroom Chaos** has desks, chairs, a whiteboard, and a podium. Step out of the marked area before the pop quiz goes live. Grab coffee for a short speed boost.
+- **Canteen Showdown** has long tables and a central counter. Chai puddles carry your momentum. Grab samosas to recover health.
+- **Hostel Night** has beds, lockers, blankets, and shadowy corners. Fighters are harder to spot at a distance, and Muawiz’s nap heals 25% faster.
+
+Plants and blankets hide fighters from distant opponents. Attacking or taking damage briefly reveals your position. Bots route around obstacles and can retreat into cover. Each arena has a map intro, a chiptune track, and quiet synthesized ambience.
+
+To add a map, copy a JSON file from `assets/maps/` and give it a unique `id` and `name`. Set the `intro` and `size` with `width`, `height`, and playable `inset`. The `tiles.layout` rows repeat across the floor, with each character mapped by `tiles.colors`. `background` sets `ground`, `edge`, and `mark` colors and can include a `path` to floor art in `assets/maps/`. Set at least five open `spawns` as `[x, y]` pairs.
+
+Place obstacles and bushes with `{ "x": 100, "y": 100, "w": 80, "h": 60, "kind": "desk" }`-style rectangles. Use the existing furniture and hideout kinds from the shipped maps. The `hazards` array supports `quiz`, `slide`, and `dark`; the `pickups` array supports `speed` and `heal`. Copy an existing entry for the parameters for that type. Choose `classroom`, `canteen`, or `hostel` for `music` and `ambient`. Restart the server and run `npm run build:solo` to refresh the downloadable game.
 
 ## Audio
 

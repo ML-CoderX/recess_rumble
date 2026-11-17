@@ -77,6 +77,9 @@ export class ArenaAudio extends GameAudio {
       case "slow":
         play(this.global.slow);
         break;
+      case "pickup":
+        play(this.global.pickup);
+        break;
       case "ready":
         if (event.player === self) this.play(this.global.ready);
         break;

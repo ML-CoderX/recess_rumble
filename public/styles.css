@@ -213,6 +213,23 @@ progress::-moz-progress-bar { background: var(--gold); border-radius: 10px; }
 }
 .volume-control input { grid-column: 1 / -1; width: 100%; margin: 0; accent-color: var(--gold); touch-action: pan-y; }
 .volume-control output { color: var(--muted); font-variant-numeric: tabular-nums; }
+.map-trigger { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; min-height: 42px; margin: 3px 0 11px; text-align: left; }
+.map-trigger strong { color: var(--gold); }
+.map-dialog { width: min(calc(100% - 28px), 640px); }
+.map-dialog header { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 13px; }
+.map-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.map-card { overflow: hidden; padding: 5px; border-radius: 8px; border: 2px solid transparent; background: #332641; text-align: left; }
+.map-card[aria-pressed=true] { border-color: var(--gold); }
+.map-card canvas, .random-preview { width: 100%; display: block; aspect-ratio: 1.6; border-radius: 4px; }
+.random-preview { display: grid; place-items: center; background: #55436a; color: var(--gold); font: 900 clamp(30px, 8vw, 66px)/1 var(--display); }
+.map-card strong { display: block; padding: 7px 5px 4px; font-size: 14px; }
+.map-intro {
+  position: absolute; top: calc(max(10px, env(safe-area-inset-top)) + 53px); left: 50%;
+  transform: translateX(-50%); width: min(calc(100% - 32px), 400px); text-align: center; pointer-events: none;
+  background: #211a2f; border: 1px solid #705976; border-radius: 9px; padding: 8px 13px;
+}
+.map-intro strong { display: block; font: 850 clamp(18px, 4vw, 24px)/1.2 var(--display); color: var(--gold); }
+.map-intro span { display: block; color: var(--light); font-size: 13px; margin-top: 3px; }
 .super-hud.flash, #super-button.flash { animation: super-ready-flash 420ms ease-out; }
 @keyframes super-ready-flash {
   0%, 100% { filter: brightness(1); }

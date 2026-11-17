@@ -43,6 +43,7 @@
             <button class="secondary" id="play-multi" type="button" aria-pressed="false">Multiplayer Room</button>
           </div>
           <div id="solo-setup" hidden>
+            <button class="quiet map-trigger" id="solo-map" type="button" aria-haspopup="dialog">Map <strong id="solo-map-name">Random</strong></button>
             <label for="difficulty">Bot difficulty</label>
             <select id="difficulty">
               <option value="easy">Easy</option>
@@ -67,6 +68,7 @@
             <div class="code-line"><strong id="room-code"></strong><button class="quiet" id="copy" type="button">Copy code</button></div>
             <div class="roster-title"><h3>Players</h3><span id="room-count"></span></div>
             <ul id="roster" class="roster"></ul>
+            <button class="quiet map-trigger" id="room-map" type="button" aria-haspopup="dialog">Map <strong id="room-map-name">Random</strong></button>
             <label id="bot-label" class="bots"><input id="bots" type="checkbox"> Fill open slots with bots</label>
             <label class="bots"><input id="takeover" type="checkbox"> Bots take over disconnected fighters</label>
             <button id="start" type="button" class="primary">Start match <span aria-hidden="true">↗</span></button>
@@ -96,6 +98,9 @@
       </div>
     </div>
     <div id="feed" class="feed"></div>
+    <div id="map-intro" class="map-intro" hidden>
+      <strong id="map-intro-name"></strong><span id="map-intro-tip"></span>
+    </div>
     <div id="countdown" class="countdown" hidden></div>
     <div id="spectate" class="spectate" hidden>Knocked out · Spectating</div>
     <div id="voice-line" class="voice-line" hidden></div>
@@ -122,6 +127,12 @@
       </div>
     </div>
   </section>
+  <dialog id="map-picker" class="audio-dialog map-dialog" aria-labelledby="map-picker-title">
+    <header><h2 id="map-picker-title">Choose a map</h2>
+      <form method="dialog"><button class="quiet" aria-label="Close map picker">Close</button></form>
+    </header>
+    <div id="map-options" class="map-options"></div>
+  </dialog>
   <dialog id="audio-start" class="audio-dialog" aria-labelledby="audio-start-title">
     <p class="eyebrow">Recess Rumble</p>
     <h2 id="audio-start-title">Tap to start</h2>

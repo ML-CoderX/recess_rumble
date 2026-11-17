@@ -1,6 +1,6 @@
-import { LIMIT, clamp } from "/shared/arena.js";
+import { LIMIT, clamp, pickMap } from "/shared/arena.js";
 import { Battle } from "/shared/battle.js";
-import { ArenaView, preload } from "./render.js";
+import { ArenaView, drawMapPreview, preload } from "./render.js";
 import { ArenaAudio } from "./arena-audio.js";
 
 const $ = id => document.getElementById(id);
@@ -27,6 +27,8 @@ const offlineCopy = Array.isArray(window.offlineFighters);
 const SOLO_ID = "solo-player";
 let socket, self, room, battle, chosen, mode, solo;
 let catalog = {};
+let maps = [];
+let soloMap = "random";
 let gotBattleAt = 0;
 let feedKey = "";
 let currentVoice;
@@ -101,7 +103,49 @@ function setCatalog(fighters) {
   preload(fighters);
   audio.loadSounds(soundConfig, catalog);
   buildFighters();
-  $("start-solo").disabled = false;
+  refreshMaps();
+}
+
+function refreshMaps() {
+  const label = id => maps.find(map => map.id === id)?.name ?? "Random";
+  text("solo-map-name", label(soloMap));
+  text("room-map-name", label(room?.map));
+  $("solo-map").disabled = !maps.length;
+  $("room-map").disabled = !maps.length || room?.host !== self;
+  $("start-solo").disabled = !maps.length || !catalog[chosen];
+}
+
+function openMapPicker(multiplayer) {
+  if (!maps.length || (multiplayer && room?.host !== self)) return;
+  const selected = multiplayer ? room.map : soloMap;
+  const cards = [{ id: "random", name: "Random" }, ...maps].map(map => {
+    const card = element("button", undefined, "map-card");
+    card.type = "button";
+    card.dataset.map = map.id;
+    card.setAttribute("aria-pressed", String(selected === map.id));
+    if (map.id === "random") {
+      const icon = element("span", "?", "random-preview");
+      icon.setAttribute("aria-hidden", "true");
+      card.append(icon);
+    } else {
+      const preview = element("canvas");
+      preview.width = 420;
+      preview.height = 262;
+      preview.setAttribute("aria-hidden", "true");
+      drawMapPreview(preview, map);
+      card.append(preview);
+    }
+    card.append(element("strong", map.name));
+    card.addEventListener("click", () => {
+      if (multiplayer) send("map", { map: map.id });
+      else soloMap = map.id;
+      refreshMaps();
+      $("map-picker").close();
+    });
+    return card;
+  });
+  $("map-options").replaceChildren(...cards);
+  $("map-picker").showModal();
 }
 
 function portrait(fighter) {
@@ -163,6 +207,7 @@ function choose(id) {
 }
 
 function displayRoom() {
+  refreshMaps();
   $("mode-choice").hidden = !!room;
   $("solo-setup").hidden = mode !== "solo";
   $("play-solo").setAttribute("aria-pressed", String(mode === "solo"));
@@ -212,10 +257,12 @@ function resetBattle() {
   $("results").hidden = true;
   $("spectate").hidden = true;
   $("voice-line").hidden = true;
+  $("map-intro").hidden = true;
   $("super-button").disabled = true;
   currentVoice = null;
   readyUntil = 0;
   audio.resetRound();
+  audio.setScene();
   view.reset();
   pointer = null;
   aim = { angle: 0, reach: 300 };
@@ -225,6 +272,7 @@ function resetBattle() {
 function receive(message) {
   if (message.type === "hello") {
     self = message.id;
+    maps = message.maps;
     setCatalog(message.fighters);
     status("Online", true);
   } else if (message.type === "error") {
@@ -246,19 +294,27 @@ function showBattle(snapshot, receivedAt) {
   const first = !battle;
   battle = snapshot;
   gotBattleAt = receivedAt;
-  if (first) aim.angle = localPlayer()?.angle ?? 0;
+  if (first) {
+    aim.angle = localPlayer()?.angle ?? 0;
+    const map = maps.find(map => map.id === snapshot.map);
+    view.setMap(map);
+    audio.setScene(map.music, map.ambient);
+    text("map-intro-name", map.name);
+    text("map-intro-tip", map.intro);
+  }
   updateFeed();
   audio.update(snapshot, catalog, self, () => { readyUntil = performance.now() + 460; });
   if (battle.result && $("results").hidden) showResults(battle.result);
 }
 
 function startSolo() {
-  if (solo || room || !catalog[chosen]) return;
+  if (solo || room || !catalog[chosen] || !maps.length) return;
   self = SOLO_ID;
   const now = performance.now() / 1000;
-  solo = new Battle([{ id: self, name: "You", fighter: chosen }], catalog, true, now, $("difficulty").value);
+  solo = new Battle([{ id: self, name: "You", fighter: chosen }], catalog, true, now,
+    pickMap(maps, soloMap), $("difficulty").value);
   displayRoom();
-  showBattle(solo.snapshot(now), now);
+  showBattle(solo.snapshot(now, self), now);
 }
 
 function endSolo() {
@@ -325,6 +381,8 @@ $("takeover").addEventListener("change", () => send("takeover", { enabled: $("ta
 $("play-solo").addEventListener("click", () => setMode("solo"));
 $("play-multi").addEventListener("click", () => setMode("multi"));
 $("start-solo").addEventListener("click", startSolo);
+$("solo-map").addEventListener("click", () => openMapPicker(false));
+$("room-map").addEventListener("click", () => openMapPicker(true));
 $("start").addEventListener("click", () => send("start"));
 $("back").addEventListener("click", () => solo ? endSolo() : send("lobby"));
 $("leave").addEventListener("click", () => send("leave"));
@@ -541,18 +599,19 @@ function frame(ms) {
       consumeActions();
     }
     solo.update(now, Math.min(0.05, now - last));
-    showBattle(solo.snapshot(now), now);
+    showBattle(solo.snapshot(now, self), now);
   }
   if (battle) {
     const current = battle.now + Math.min(0.15, Math.max(0, now - gotBattleAt));
     const me = localPlayer();
     const remaining = Math.max(0, Math.min(120, Math.ceil(battle.endsAt - (battle.result?.finishedAt ?? current))));
     text("clock", Math.floor(remaining / 60) + ":" + String(remaining % 60).padStart(2, "0"));
-    text("alive", battle.players.filter(p => p.hp).length);
+    text("alive", battle.alive);
     text("kos", me?.kos ?? 0);
     const count = Math.ceil(battle.startsAt - current);
     const activeCountdown = count > 0 || current - battle.startsAt < 0.6;
     $("countdown").hidden = !activeCountdown || !!battle.result;
+    $("map-intro").hidden = current >= battle.startsAt + 0.6 || !!battle.result;
     if (activeCountdown) text("countdown", count > 0 ? count : "RUMBLE!");
     $("spectate").hidden = !!me?.hp || !!battle.result;
     if (ms >= voiceUntil) $("voice-line").hidden = true;
@@ -572,11 +631,21 @@ function frame(ms) {
 }
 
 if (offlineCopy) {
+  maps = window.offlineMaps;
   $("play-multi").disabled = true;
   $("download-solo").hidden = true;
   setCatalog(window.offlineFighters);
   status("Solo · Offline");
 } else {
+  fetch("/maps.json").then(response => {
+    if (!response.ok) throw new Error("Maps unavailable");
+    return response.json();
+  }).then(config => {
+    if (!maps.length) maps = config;
+    refreshMaps();
+  }).catch(() => {
+    if (!maps.length) error("Could not load the maps. Reload this page when the host server is available.");
+  });
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("/offline-worker.js").catch(() => {
       // The downloadable build also works on origins without offline caching.

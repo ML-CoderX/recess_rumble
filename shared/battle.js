@@ -266,7 +266,8 @@ export class Battle {
       (dodge !== undefined || threatRange > 170) && dist > 125 && dist < threatRange + 50;
     const cover = seekCover && findCover(this.map, p, target);
     const coverProtected = config.passive?.type === "nap" && !canSee && p.hp < p.maxHp * 0.61 && dist > 180;
-    const waypoint = cover || (!canSee && !coverProtected && nextWaypoint(this.map, p, target));
+    const routeBlocked = !canSee || dist > desired + 27 && !clearPath(this.map, p, target, R);
+    const waypoint = cover || (routeBlocked && !coverProtected && nextWaypoint(this.map, p, target));
     if (quiz) {
       approach = Math.atan2(p.y - quiz.zone.y - quiz.zone.h / 2, p.x - quiz.zone.x - quiz.zone.w / 2);
     } else if (dodge !== undefined) {

@@ -14,6 +14,7 @@ const CUES = {
   lose: notes([523, 466, 392, 277], 0.23, 0.13),
   ready: notes([988, 1319, 1760], 0.19, 0.055),
   ko: notes([880, 587], 0.12, 0.07),
+  pickup: notes([740, 990, 1320], 0.14, 0.055, 0.16),
   ring: [tone("sine", 1650, 1250, 0.23, 0.2), tone("triangle", 1100, 1090, 0.15, 0.09, 0.055)],
   tap: [tone("triangle", 350, 155, 0.1, 0.24), noise("bandpass", 1050, 0.055, 0.17)],
   thud: [tone("sine", 112, 45, 0.28, 0.34), noise("lowpass", 330, 0.18, 0.34)],
@@ -39,7 +40,21 @@ const MELODY = [
   74, 77, 81, null, 83, 81, 77, 76, 74, null, 79, 77, 76, 74, 71, 67
 ];
 const BASS = [48, 48, 45, 45, 50, 50, 43, 43];
-const STEP = 60 / 136 / 2;
+const TRACKS = {
+  menu: { tempo: 136, key: 0, wave: "square", lead: MELODY },
+  classroom: { tempo: 150, key: 2, wave: "square", lead: [
+    72, 79, 76, 79, 84, 79, 76, null, 72, 76, 81, 79, 76, null, 72, null,
+    74, 81, 77, 81, 86, 81, 77, null, 79, 83, 86, 83, 79, 77, 74, 71
+  ] },
+  canteen: { tempo: 126, key: 0, wave: "triangle", lead: [
+    76, null, 79, 81, 79, null, 74, 76, 72, null, 76, 79, 81, null, 76, null,
+    77, null, 81, 79, 77, null, 76, 74, 79, null, 77, 76, 74, 71, 67, null
+  ] },
+  hostel: { tempo: 110, key: -5, wave: "triangle", lead: [
+    79, null, 76, null, 74, 72, null, null, 76, null, 79, null, 81, null, 76, null,
+    77, null, 81, null, 84, 81, null, null, 79, null, 77, null, 74, null, 71, null
+  ] }
+};
 const midi = note => 440 * 2 ** ((note - 69) / 12);
 
 function readSettings() {
@@ -60,6 +75,7 @@ export class GameAudio {
     this.naps = new Map();
     this.voiceToken = 0;
     this.trackStep = 0;
+    this.track = TRACKS.menu;
   }
 
   async unlock() {
@@ -171,21 +187,51 @@ export class GameAudio {
     if (this.context.state !== "running") return;
     const now = this.context.currentTime;
     if (this.nextNote < now) this.nextNote = now + 0.03;
+    const { tempo, key, wave, lead } = this.track;
+    const duration = 60 / tempo / 2;
     while (this.nextNote < now + 0.14) {
       const step = this.trackStep;
       if (!this.settings.muted && this.settings.music) {
-        const lead = MELODY[step];
-        if (lead !== null) this.synth(tone("square", midi(lead), midi(lead), STEP * 0.82, 0.12), this.nextNote, this.music, 1);
+        const note = lead[step];
+        if (note !== null) {
+          const hz = midi(note + key);
+          this.synth(tone(wave, hz, hz, duration * 0.82, 0.12), this.nextNote, this.music, 1);
+        }
         if (step % 2 === 0) {
-          const hz = midi(BASS[Math.floor(step / 4)] + (step % 4 === 2 ? 12 : 0));
-          this.synth(tone("triangle", hz, hz, STEP * 1.35, 0.19), this.nextNote, this.music, 1);
+          const hz = midi(BASS[Math.floor(step / 4)] + key + (step % 4 === 2 ? 12 : 0));
+          this.synth(tone("triangle", hz, hz, duration * 1.35, 0.19), this.nextNote, this.music, 1);
         }
         const beat = step % 4;
         if (beat === 0) this.synth(tone("sine", 92, 38, 0.12, 0.29), this.nextNote, this.music, 1);
         else this.synth(noise("highpass", beat === 2 ? 1500 : 5300, 0.077, 0.15), this.nextNote, this.music, 1);
+        this.scheduleAmbient(step);
       }
-      this.trackStep = (step + 1) % MELODY.length;
-      this.nextNote += STEP;
+      this.trackStep = (step + 1) % lead.length;
+      this.nextNote += duration;
+    }
+  }
+
+  setScene(track, ambient) {
+    const next = Object.hasOwn(TRACKS, track) ? TRACKS[track] : TRACKS.menu;
+    if (next === this.track && ambient === this.ambient) return;
+    this.track = next;
+    this.ambient = ambient;
+    this.trackStep = 0;
+    this.nextNote = 0;
+  }
+
+  scheduleAmbient(step) {
+    const play = (part, delay = 0) => this.synth(part, this.nextNote + delay, this.music, 1);
+    if (this.ambient === "classroom" && step % 4 === 0) {
+      play(noise("bandpass", step % 8 ? 295 : 460, 0.83, 0.06));
+      play(tone("triangle", 145, 126, 0.28, 0.034), 0.11);
+      play(tone("sine", 201, 232, 0.23, 0.041), 0.28);
+    } else if (this.ambient === "canteen" && step % 7 === 2) {
+      play(noise("bandpass", 1260, 0.18, 0.067));
+      play(tone("triangle", 1470, 934, 0.15, 0.061), 0.06);
+      play(tone("sine", 1833, 1210, 0.14, 0.041), 0.11);
+    } else if (this.ambient === "hostel" && step % 8 === 4) {
+      for (let i = 0; i < 3; i++) play(tone("sine", 2770, 2980, 0.048, 0.052), i * 0.083);
     }
   }
 
