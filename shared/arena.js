@@ -7,6 +7,8 @@ export const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 export const inside = (p, box, padding = 0) =>
   p.x > box.x - padding && p.x < box.x + box.w + padding &&
   p.y > box.y - padding && p.y < box.y + box.h + padding;
+export const insideEllipse = (p, box) =>
+  ((p.x - box.x) / box.w * 2 - 1) ** 2 + ((p.y - box.y) / box.h * 2 - 1) ** 2 < 1;
 export const onFloor = (p, { width, height, inset }, padding = 0) =>
   p.x >= inset + padding && p.x <= width - inset - padding &&
   p.y >= inset + padding && p.y <= height - inset - padding;

@@ -5,14 +5,15 @@ import { networkInterfaces } from "node:os";
 import { performance } from "node:perf_hooks";
 import { WebSocketServer, WebSocket } from "ws";
 import { Battle } from "../shared/battle.js";
-import { LIMIT } from "../shared/arena.js";
-import { loadAudio, loadFighters, buildSoloPage, root } from "./game-files.js";
+import { LIMIT, pickMap } from "../shared/arena.js";
+import { loadAudio, loadFighters, loadMaps, buildSoloPage, root } from "./game-files.js";
 
 const time = () => performance.now() / 1000;
 const fighters = await loadFighters();
 const defaultFighter = fighters.muawiz?.id ?? Object.keys(fighters)[0];
 const audio = await loadAudio();
-const soloPage = await buildSoloPage(fighters, audio);
+const maps = await loadMaps();
+const soloPage = await buildSoloPage(fighters, audio, maps);
 const offlineVersion = createHash("sha256").update(soloPage).digest("hex").slice(0, 16);
 
 const types = {
@@ -20,7 +21,7 @@ const types = {
   css: "text/css; charset=utf-8", svg: "image/svg+xml", png: "image/png",
   webp: "image/webp", woff2: "font/woff2", mp3: "audio/mpeg", ogg: "audio/ogg"
 };
-const files = /^\/(?:public\/[a-z0-9-]+\.(?:js|css)|shared\/[a-z0-9-]+\.js|assets\/(?:sprites|fonts)\/[a-z0-9_-]+\.(?:svg|png|webp|woff2)|assets\/sounds\/[a-z0-9_-]+\.(?:mp3|ogg))$/i;
+const files = /^\/(?:public\/[a-z0-9-]+\.(?:js|css)|shared\/[a-z0-9-]+\.js|assets\/(?:sprites|fonts|maps)\/[a-z0-9_-]+\.(?:svg|png|webp|woff2)|assets\/sounds\/[a-z0-9_-]+\.(?:mp3|ogg))$/i;
 const server = createServer(async (req, res) => {
   const path = req.url?.split("?")[0];
   const file = path === "/" ? "public/index.html" : files.test(path) ? path.slice(1) : null;
@@ -37,6 +38,11 @@ const server = createServer(async (req, res) => {
     if (path === "/audio.json") {
       res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" })
         .end(req.method === "HEAD" ? undefined : JSON.stringify(audio));
+      return;
+    }
+    if (path === "/maps.json") {
+      res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-cache" })
+        .end(req.method === "HEAD" ? undefined : JSON.stringify(maps));
       return;
     }
     if (path === "/solo.html" || path === "/offline-shell") {
@@ -85,8 +91,14 @@ function broadcast(room, message) {
 function sync(room) {
   broadcast(room, {
     type: "room", code: room.code, host: room.host, bots: room.bots, takeover: room.takeover,
-    running: !!room.battle, members: [...room.members.values()].map(memberInfo)
+    map: room.map, running: !!room.battle, members: [...room.members.values()].map(memberInfo)
   });
+}
+
+function sendBattle(room, now) {
+  for (const member of room.members.values()) {
+    send(member.socket, room.battle.snapshot(now, member.id));
+  }
 }
 
 function roomCode() {
@@ -119,7 +131,7 @@ function entry(member, message) {
   let room;
   if (message.type === "create") {
     const code = roomCode();
-    room = { code, host: member.id, bots: true, takeover: false, members: new Map(), battle: null };
+    room = { code, host: member.id, bots: true, takeover: false, map: "random", members: new Map(), battle: null };
     rooms.set(code, room);
   } else {
     const code = typeof message.code === "string" ? message.code.toUpperCase().trim() : "";
@@ -142,7 +154,7 @@ sockets.on("connection", socket => {
   socket.on("pong", () => { socket.alive = true; });
   socket.on("error", () => {});
   socket.on("close", () => leave(member));
-  send(socket, { type: "hello", id: member.id, fighters: Object.values(fighters) });
+  send(socket, { type: "hello", id: member.id, fighters: Object.values(fighters), maps });
   let windowEnds = 0;
   let count = 0;
   socket.on("message", raw => {
@@ -174,13 +186,18 @@ sockets.on("connection", socket => {
         } else if (message.type === "takeover" && !room.battle) {
           room.takeover = message.enabled === true;
           sync(room);
+        } else if (message.type === "map" && !room.battle &&
+            (message.map === "random" || maps.some(map => map.id === message.map))) {
+          room.map = message.map;
+          sync(room);
         } else if (message.type === "start" && !room.battle) {
           if (!room.bots && room.members.size < 2) {
             throw new Error("Invite another player or turn on bots.");
           }
-          room.battle = new Battle([...room.members.values()].map(memberInfo), fighters, room.bots, now);
+          room.battle = new Battle([...room.members.values()].map(memberInfo), fighters, room.bots, now,
+            pickMap(maps, room.map));
           sync(room);
-          broadcast(room, room.battle.snapshot(now));
+          sendBattle(room, now);
         } else if (message.type === "lobby" && room.battle?.result) {
           room.battle = null;
           sync(room);
@@ -202,7 +219,7 @@ setInterval(() => {
   for (const room of rooms.values()) {
     if (!room.battle) continue;
     room.battle.update(now, dt);
-    if (shouldBroadcast) broadcast(room, room.battle.snapshot(now));
+    if (shouldBroadcast) sendBattle(room, now);
   }
   if (shouldBroadcast) lastBroadcast = now;
 }, 1000 / 60).unref();

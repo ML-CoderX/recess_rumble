@@ -1,5 +1,5 @@
 import { PLAYER_RADIUS as R, LIMIT, ROUND_SECONDS, clamp, distance, collideSegment,
-  rectangleImpact, clearPath, inside, onFloor } from "./arena.js";
+  rectangleImpact, clearPath, inside, insideEllipse, onFloor } from "./arena.js";
 import { findCover, nextWaypoint } from "./navigation.js";
 
 const BOT_NAMES = ["Bot Sleepyhead", "Bot Stickerman", "Bot Lunchbox", "Bot Hall Monitor"];
@@ -265,7 +265,7 @@ export class Battle {
     const seekCover = canSee && !superReady && p.hp < p.maxHp * 0.61 &&
       (dodge !== undefined || threatRange > 170) && dist > 125 && dist < threatRange + 50;
     const cover = seekCover && findCover(this.map, p, target);
-    const coverProtected = !canSee && p.hp < p.maxHp * 0.61 && dist > 180;
+    const coverProtected = config.passive?.type === "nap" && !canSee && p.hp < p.maxHp * 0.61 && dist > 180;
     const waypoint = cover || (!canSee && !coverProtected && nextWaypoint(this.map, p, target));
     if (quiz) {
       approach = Math.atan2(p.y - quiz.zone.y - quiz.zone.h / 2, p.x - quiz.zone.x - quiz.zone.w / 2);
@@ -314,7 +314,7 @@ export class Battle {
       const length = Math.max(1, Math.hypot(input.x, input.y));
       const boost = now < p.boostUntil ? p.boost : 1;
       const speed = stunned ? 0 : (115 + config.stats.speed * 14) * slow * boost / length;
-      const slide = this.map.hazards.find(h => h.type === "slide" && h.zones.some(zone => inside(p, zone)));
+      const slide = this.map.hazards.find(h => h.type === "slide" && h.zones.some(zone => insideEllipse(p, zone)));
       const grip = slide && !stunned ? 1 - Math.exp(-slide.grip * dt) : 1;
       p.vx += (input.x * speed - p.vx) * grip;
       p.vy += (input.y * speed - p.vy) * grip;
@@ -363,7 +363,7 @@ export class Battle {
     const { width, height, inset } = this.map.size;
     for (const [axis, velocity, delta, limit] of [["x", "vx", dx, width], ["y", "vy", dy, height]]) {
       if (!delta) continue;
-      const end = { ...p, [axis]: clamp(p[axis] + delta, inset + R, limit - inset - R) };
+      const end = { x: p.x, y: p.y, [axis]: clamp(p[axis] + delta, inset + R, limit - inset - R) };
       const t = Math.min(1, ...this.map.obstacles.map(box => rectangleImpact(p, end, box, R)));
       const moved = (end[axis] - p[axis]) * Math.max(0, t < 1 ? t - 0.001 : 1);
       p[axis] += moved;
@@ -372,7 +372,7 @@ export class Battle {
   }
 
   hiddenFrom(player, viewer, now) {
-    if (!viewer?.hp || !player.hp || player === viewer || player.revealedUntil > now) return false;
+    if (!viewer?.hp || !player?.hp || player === viewer || player.revealedUntil > now) return false;
     const d = distance(player, viewer);
     const bush = this.map.bushes.find(box => inside(player, box));
     if (bush && d > 85 && !inside(viewer, bush)) return true;

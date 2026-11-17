@@ -1,4 +1,5 @@
 import { readFile, readdir } from "node:fs/promises";
+import { inside, onFloor, LIMIT, PLAYER_RADIUS } from "../shared/arena.js";
 
 export const root = new URL("../", import.meta.url);
 const read = path => readFile(new URL(path.slice(1), root));
@@ -24,7 +25,31 @@ export async function loadFighters() {
   return fighters;
 }
 
-export async function buildSoloPage(fighters, audio = null) {
+export async function loadMaps() {
+  const dir = new URL("assets/maps/", root);
+  const maps = [];
+  const validRect = box => [box?.x, box?.y, box?.w, box?.h].every(Number.isFinite) && box.w > 0 && box.h > 0;
+  for (const file of (await readdir(dir)).sort()) {
+    if (!file.endsWith(".json")) continue;
+    const map = JSON.parse(await readFile(new URL(file, dir), "utf8"));
+    if (!/^[a-z0-9-]+$/.test(map.id) || map.id === "random" || maps.some(m => m.id === map.id) ||
+        typeof map.name !== "string" || !map.background ||
+        ![map.size?.width, map.size?.height, map.size?.inset, map.tiles?.size].every(Number.isFinite) ||
+        map.tiles.size <= 0 || map.size.width <= 0 || map.size.height <= 0 || map.size.inset < 0 ||
+        !map.tiles.layout?.length || !map.tiles.layout.every(row => typeof row === "string" && row.length) ||
+        !map.tiles.colors || !map.obstacles?.every(validRect) || !map.bushes?.every(validRect) ||
+        !map.hazards?.every(h => h.zones?.length && h.zones.every(validRect)) || !Array.isArray(map.pickups) ||
+        !map.spawns?.every(([x, y]) => onFloor({ x, y }, map.size, PLAYER_RADIUS) &&
+          map.obstacles.every(box => !inside({ x, y }, box, PLAYER_RADIUS))) || map.spawns.length < LIMIT) {
+      throw new Error("Invalid map config in " + file);
+    }
+    maps.push(map);
+  }
+  if (!maps.length) throw new Error("Add at least one map in assets/maps.");
+  return maps;
+}
+
+export async function buildSoloPage(fighters, audio = null, maps = null) {
   const modules = new Map();
   const assets = new Map();
   async function embedModule(path) {
@@ -42,8 +67,8 @@ export async function buildSoloPage(fighters, audio = null) {
 
   async function embedSprite(path) {
     if (!assets.has(path)) {
-      if (!/^\/assets\/sprites\/[a-z0-9_-]+\.(svg|png|webp)$/i.test(path)) {
-        throw new Error("Invalid sprite path: " + path);
+      if (!/^\/assets\/(?:sprites|maps)\/[a-z0-9_-]+\.(svg|png|webp)$/i.test(path)) {
+        throw new Error("Invalid image path: " + path);
       }
       const type = spriteTypes[path.split(".").pop().toLowerCase()];
       assets.set(path, dataUrl(type, await read(path)));
@@ -84,8 +109,12 @@ export async function buildSoloPage(fighters, audio = null) {
   const app = await embedModule("/public/app.js");
   const config = JSON.stringify(roster).replaceAll("<", "\\u003c");
   const sounds = JSON.stringify(await embedSounds(audio ?? await loadAudio())).replaceAll("<", "\\u003c");
+  const stages = await Promise.all((maps ?? await loadMaps()).map(async map => map.background.path
+    ? { ...map, background: { ...map.background, path: await embedSprite(map.background.path) } }
+    : map));
+  const mapConfig = JSON.stringify(stages).replaceAll("<", "\\u003c");
   return html.replace('<link rel="stylesheet" href="/public/styles.css">', () => "<style>" + css + "</style>")
     .replace('<script type="module" src="/public/app.js"></script>',
       () => '<script>window.offlineFighters = ' + config + '; window.offlineAudio = ' + sounds +
-        ';</script>\n  <script type="module" src="' + app + '"></script>');
+        '; window.offlineMaps = ' + mapConfig + ';</script>\n  <script type="module" src="' + app + '"></script>');
 }
