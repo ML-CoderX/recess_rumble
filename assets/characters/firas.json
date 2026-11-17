@@ -1,0 +1,28 @@
+{
+  "id": "firas",
+  "name": "Nigamon Firas",
+  "class": "Fast",
+  "color": "#ff6b75",
+  "stats": { "health": 4, "speed": 9, "damage": 5, "range": 2 },
+  "sprite": { "path": "/assets/sprites/firas.svg" },
+  "attack": {
+    "name": "Grab & Slam",
+    "description": "Grab and slam the nearest rival with the backpack arm.",
+    "type": "slam", "cooldown": 0.46, "charge": 27
+  },
+  "super": {
+    "name": "Laser Arm",
+    "description": "Extend the arm and fire a piercing laser.",
+    "type": "beam", "range": 790, "radius": 24, "damage": 230
+  },
+  "passive": {
+    "name": "Sticker Trail",
+    "description": "Drop stickers every few seconds that slow rivals.",
+    "type": "sticker", "delay": 3.5, "duration": 9, "radius": 26, "slow": 0.64
+  },
+  "voiceLines": { "defeated": "I need a new sticker sheet!", "super": "Sticker strike!" },
+  "sounds": {
+    "attack": "servo", "grab": "clunk", "attackHit": "slam",
+    "super": "hum", "zap": "zap", "sticker": "peel", "hurt": "boing", "defeated": "tumble"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "menu": "click",
+  "countdown": "count",
+  "start": "go",
+  "end": "end",
+  "win": "win",
+  "lose": "lose",
+  "ko": "ko",
+  "slow": "peel",
+  "smallHit": "tap",
+  "heavyHit": "thud",
+  "stun": "ring",
+  "hurt": "boing",
+  "ready": "ready"
+}

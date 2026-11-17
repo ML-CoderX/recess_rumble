@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="theme-color" content="#14111b">
+  <title>Recess Rumble • Local Arena</title>
+  <link rel="stylesheet" href="/public/styles.css">
+  <script type="module" src="/public/app.js"></script>
+</head>
+<body>
+  <main id="menu">
+    <header class="topbar">
+      <a href="" class="brand" aria-label="Recess Rumble home">
+        <span class="brand-mark" aria-hidden="true">✦</span>
+        <span>RECESS<span class="brand-accent"> RUMBLE</span></span>
+      </a>
+      <div class="top-actions">
+        <span id="connection" class="connection" role="status" hidden></span>
+        <button class="quiet" id="audio-menu" type="button" aria-haspopup="dialog">Audio</button>
+      </div>
+    </header>
+
+    <div class="wrap">
+      <header class="intro">
+        <p class="eyebrow">Solo and local Wi-Fi brawler</p>
+        <h1>Recess <em>Rumble</em></h1>
+        <p>Pick a fighter and settle it in a two-minute free-for-all.</p>
+      </header>
+
+      <div class="lobby-layout">
+        <section class="selection" aria-labelledby="select-title">
+          <div class="section-title"><h2 id="select-title">Choose your fighter</h2><span id="fighter-count"></span></div>
+          <div class="fighters" id="fighters"></div>
+        </section>
+
+        <aside class="room-panel" aria-labelledby="room-title">
+          <span class="room-symbol" aria-hidden="true">◈</span>
+          <h2 id="room-title">Play a match</h2>
+          <p id="room-description">Take on four bots or challenge friends on the same Wi-Fi.</p>
+          <div id="mode-choice" class="mode-choice">
+            <button class="primary" id="play-solo" type="button" aria-pressed="false">Play Solo <span aria-hidden="true">↗</span></button>
+            <button class="secondary" id="play-multi" type="button" aria-pressed="false">Multiplayer Room</button>
+          </div>
+          <div id="solo-setup" hidden>
+            <label for="difficulty">Bot difficulty</label>
+            <select id="difficulty">
+              <option value="easy">Easy</option>
+              <option value="medium" selected>Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+            <button class="primary" id="start-solo" type="button" disabled>Start solo match <span aria-hidden="true">↗</span></button>
+            <a id="download-solo" href="/solo.html" download="recess-rumble-solo.html">Download offline game</a>
+          </div>
+          <form id="entry" hidden>
+            <label for="name">Player name</label>
+            <input id="name" maxlength="18" placeholder="Enter your name" autocomplete="nickname" required>
+            <button class="primary" id="create" type="submit" name="action" value="create" disabled>Create room <span aria-hidden="true">↗</span></button>
+            <div class="divider"><span>or join a room</span></div>
+            <label class="sr-only" for="code">Room code</label>
+            <div class="join-row">
+              <input id="code" maxlength="5" minlength="5" autocapitalize="characters" autocomplete="off" spellcheck="false" enterkeyhint="go" placeholder="Room code">
+              <button class="secondary" id="join" type="submit" name="action" value="join" disabled>Join</button>
+            </div>
+          </form>
+          <div id="room" hidden>
+            <div class="code-line"><strong id="room-code"></strong><button class="quiet" id="copy" type="button">Copy code</button></div>
+            <div class="roster-title"><h3>Players</h3><span id="room-count"></span></div>
+            <ul id="roster" class="roster"></ul>
+            <label id="bot-label" class="bots"><input id="bots" type="checkbox"> Fill open slots with bots</label>
+            <label class="bots"><input id="takeover" type="checkbox"> Bots take over disconnected fighters</label>
+            <button id="start" type="button" class="primary">Start match <span aria-hidden="true">↗</span></button>
+            <p id="waiting" class="waiting" hidden>Waiting for the host to start.</p>
+            <button id="leave" type="button" class="quiet leave">Leave room</button>
+          </div>
+          <p id="error" class="error" role="alert" hidden></p>
+        </aside>
+        <div class="loadout" id="loadout" hidden></div>
+      </div>
+
+      <section class="control-strip" aria-label="Game controls">
+        <div><strong>Desktop</strong><span><kbd>WASD</kbd> / <kbd>↑↓←→</kbd> move · Mouse aim · Click attack · <kbd>Space</kbd> super</span></div>
+        <div><strong>Touch</strong><span>Left stick moves · Right stick aims and fires · Super lights up when charged</span></div>
+      </section>
+    </div>
+  </main>
+
+  <section id="game" aria-label="Match" hidden>
+    <canvas id="arena" aria-label="Recess Rumble arena"></canvas>
+    <div class="match-top">
+      <div class="match-score"><strong id="alive">5</strong> alive <span>·</span> <strong id="kos">0</strong> KOs</div>
+      <div id="clock" class="clock">2:00</div>
+      <div class="match-actions">
+        <button id="audio-match" type="button" class="quiet" aria-haspopup="dialog">Audio</button>
+        <button id="exit" type="button" class="quiet">Leave</button>
+      </div>
+    </div>
+    <div id="feed" class="feed"></div>
+    <div id="countdown" class="countdown" hidden></div>
+    <div id="spectate" class="spectate" hidden>Knocked out · Spectating</div>
+    <div id="voice-line" class="voice-line" hidden></div>
+    <div class="match-bottom">
+      <div id="move-stick" class="stick" aria-label="Move"><i></i><span>Move</span></div>
+      <div class="super-hud">
+        <span id="super-label">Super</span>
+        <progress id="super-meter" max="100" value="0" aria-label="Super charge"></progress>
+        <span id="super-percent">0%</span>
+      </div>
+      <div class="touch-attacks">
+        <button id="super-button" type="button" disabled>Super</button>
+        <div id="aim-stick" class="stick" aria-label="Aim and fire"><i></i><span>Attack</span></div>
+      </div>
+    </div>
+    <div id="results" class="results" hidden>
+      <div class="results-card">
+        <h2 id="outcome"></h2>
+        <p id="result-caption"></p>
+        <ol id="scores"></ol>
+        <button id="back" type="button" class="primary">Back to lobby</button>
+        <p id="result-waiting" hidden>Waiting for the host to reopen the lobby.</p>
+        <button id="result-leave" type="button" class="quiet">Leave room</button>
+      </div>
+    </div>
+  </section>
+  <dialog id="audio-start" class="audio-dialog" aria-labelledby="audio-start-title">
+    <p class="eyebrow">Recess Rumble</p>
+    <h2 id="audio-start-title">Tap to start</h2>
+    <p>Enable arcade sound effects, music, and fighter voices.</p>
+    <button id="audio-unlock" class="primary" type="button">Start <span aria-hidden="true">↗</span></button>
+    <button id="audio-silent" class="quiet" type="button">Start muted</button>
+  </dialog>
+  <dialog id="audio-settings" class="audio-dialog" aria-labelledby="audio-settings-title">
+    <h2 id="audio-settings-title">Audio settings</h2>
+    <div class="volume-control">
+      <label for="volume-music">Music</label><output id="music-value" for="volume-music"></output>
+      <input id="volume-music" type="range" min="0" max="100" step="1">
+    </div>
+    <div class="volume-control">
+      <label for="volume-effects">Sound effects</label><output id="effects-value" for="volume-effects"></output>
+      <input id="volume-effects" type="range" min="0" max="100" step="1">
+    </div>
+    <div class="volume-control">
+      <label for="volume-voices">Voices</label><output id="voices-value" for="volume-voices"></output>
+      <input id="volume-voices" type="range" min="0" max="100" step="1">
+    </div>
+    <label class="bots"><input id="audio-mute" type="checkbox"> Mute all audio</label>
+    <form method="dialog"><button class="primary">Done</button></form>
+  </dialog>
+</body>
+</html>
+

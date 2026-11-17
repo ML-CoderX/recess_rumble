@@ -1,0 +1,29 @@
+{
+  "id": "muawiz",
+  "name": "Muawiz the Great",
+  "class": "Ranged",
+  "color": "#ffbf54",
+  "stats": { "health": 5, "speed": 5, "damage": 8, "range": 8 },
+  "sprite": { "path": "/assets/sprites/muawiz.svg" },
+  "attack": {
+    "name": "Small Appo",
+    "description": "Fling a fast, straight chapati.",
+    "type": "projectile", "cooldown": 0.62, "speed": 690, "charge": 34
+  },
+  "super": {
+    "name": "Appo Smash",
+    "description": "Lob a giant chapati that damages and briefly stuns.",
+    "type": "lob", "range": 490, "radius": 86, "damage": 245, "delay": 0.53, "stun": 0.85
+  },
+  "passive": {
+    "name": "Power Nap",
+    "description": "Stay still for 2 seconds to heal. Incoming hits hurt more while asleep.",
+    "type": "nap", "delay": 2, "healing": 29, "vulnerability": 1.35
+  },
+  "voiceLines": { "defeated": "Going to Byndoor", "super": "Extra-large appo, coming up!" },
+  "sounds": {
+    "attack": "whoosh", "attackHit": "splat", "super": "rise",
+    "impact": "slam", "superStun": "ring", "nap": "snore",
+    "hurt": "boing", "defeated": "tumble"
+  }
+}

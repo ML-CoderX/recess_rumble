@@ -1,0 +1,81 @@
+{
+  "id": "hostel",
+  "name": "Hostel Night",
+  "intro": "Dark corners hide fighters. Naps heal faster here.",
+  "size": {
+    "width": 1120,
+    "height": 710,
+    "inset": 30
+  },
+  "tiles": {
+    "size": 60,
+    "layout": [
+      "aab",
+      "baa"
+    ],
+    "colors": {
+      "a": "#444764",
+      "b": "#494a69"
+    }
+  },
+  "background": {
+    "ground": "#1b1c34",
+    "edge": "#5e587c",
+    "mark": "#827c9a"
+  },
+  "music": "hostel",
+  "ambient": "hostel",
+  "napHealMultiplier": 1.25,
+  "spawns": [
+    [
+      112,
+      345
+    ],
+    [
+      1008,
+      345
+    ],
+    [
+      557,
+      120
+    ],
+    [
+      557,
+      610
+    ],
+    [
+      963,
+      580
+    ]
+  ],
+  "obstacles": [
+    { "x": 229, "y": 150, "w": 136, "h": 83, "kind": "bed" },
+    { "x": 744, "y": 151, "w": 136, "h": 83, "kind": "bed" },
+    { "x": 229, "y": 473, "w": 136, "h": 83, "kind": "bed" },
+    { "x": 744, "y": 473, "w": 136, "h": 83, "kind": "bed" },
+    { "x": 495, "y": 313, "w": 130, "h": 75, "kind": "locker" },
+    { "x": 483, "y": 30, "w": 156, "h": 43, "kind": "locker" },
+    { "x": 479, "y": 637, "w": 166, "h": 42, "kind": "locker" }
+  ],
+  "bushes": [
+    { "x": 122, "y": 137, "w": 78, "h": 83, "kind": "blanket" },
+    { "x": 927, "y": 141, "w": 78, "h": 83, "kind": "blanket" },
+    { "x": 123, "y": 480, "w": 78, "h": 81, "kind": "blanket" },
+    { "x": 926, "y": 473, "w": 78, "h": 82, "kind": "blanket" },
+    { "x": 431, "y": 392, "w": 91, "h": 59, "kind": "blanket" }
+  ],
+  "hazards": [
+    {
+      "type": "dark",
+      "visibility": 172,
+      "flicker": 0.24,
+      "zones": [
+        { "x": 30, "y": 30, "w": 217, "h": 206 },
+        { "x": 873, "y": 30, "w": 217, "h": 206 },
+        { "x": 30, "y": 471, "w": 217, "h": 209 },
+        { "x": 873, "y": 471, "w": 217, "h": 209 }
+      ]
+    }
+  ],
+  "pickups": []
+}

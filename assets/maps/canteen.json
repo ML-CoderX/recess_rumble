@@ -1,0 +1,93 @@
+{
+  "id": "canteen",
+  "name": "Canteen Showdown",
+  "intro": "Slide past the spilled chai and grab a samosa.",
+  "size": {
+    "width": 1160,
+    "height": 720,
+    "inset": 30
+  },
+  "tiles": {
+    "size": 48,
+    "layout": [
+      "aba",
+      "bab"
+    ],
+    "colors": {
+      "a": "#517b74",
+      "b": "#60887e"
+    }
+  },
+  "background": {
+    "ground": "#23323b",
+    "edge": "#597b6e",
+    "mark": "#a8ccb0"
+  },
+  "music": "canteen",
+  "ambient": "canteen",
+  "spawns": [
+    [
+      114,
+      347
+    ],
+    [
+      1040,
+      335
+    ],
+    [
+      565,
+      110
+    ],
+    [
+      585,
+      602
+    ],
+    [
+      1001,
+      588
+    ]
+  ],
+  "obstacles": [
+    { "x": 466, "y": 287, "w": 224, "h": 113, "kind": "counter" },
+    { "x": 231, "y": 152, "w": 181, "h": 68, "kind": "table" },
+    { "x": 749, "y": 154, "w": 181, "h": 68, "kind": "table" },
+    { "x": 227, "y": 488, "w": 185, "h": 68, "kind": "table" },
+    { "x": 748, "y": 488, "w": 182, "h": 68, "kind": "table" },
+    { "x": 158, "y": 478, "w": 41, "h": 38, "kind": "chair" },
+    { "x": 988, "y": 493, "w": 41, "h": 38, "kind": "chair" },
+    { "x": 321, "y": 290, "w": 42, "h": 40, "kind": "chair" },
+    { "x": 798, "y": 402, "w": 42, "h": 40, "kind": "chair" }
+  ],
+  "bushes": [
+    { "x": 62, "y": 90, "w": 93, "h": 70, "kind": "plant" },
+    { "x": 996, "y": 91, "w": 91, "h": 68, "kind": "plant" }
+  ],
+  "hazards": [
+    {
+      "type": "slide",
+      "grip": 1.5,
+      "zones": [
+        { "x": 80, "y": 419, "w": 122, "h": 82 },
+        { "x": 918, "y": 267, "w": 127, "h": 82 },
+        { "x": 527, "y": 164, "w": 105, "h": 86 },
+        { "x": 514, "y": 438, "w": 129, "h": 81 }
+      ]
+    }
+  ],
+  "pickups": [
+    {
+      "type": "heal",
+      "x": 414,
+      "y": 378,
+      "amount": 80,
+      "respawn": 11
+    },
+    {
+      "type": "heal",
+      "x": 730,
+      "y": 353,
+      "amount": 80,
+      "respawn": 11
+    }
+  ]
+}

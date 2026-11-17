@@ -1,0 +1,103 @@
+{
+  "id": "classroom",
+  "name": "Classroom Chaos",
+  "intro": "Don’t get caught by the surprise quiz!",
+  "size": {
+    "width": 1120,
+    "height": 700,
+    "inset": 30
+  },
+  "tiles": {
+    "size": 56,
+    "layout": [
+      "ab",
+      "ba"
+    ],
+    "colors": {
+      "a": "#ad785d",
+      "b": "#a67156"
+    }
+  },
+  "background": {
+    "ground": "#302334",
+    "edge": "#72505a",
+    "mark": "#eab48a"
+  },
+  "music": "classroom",
+  "ambient": "classroom",
+  "spawns": [
+    [
+      110,
+      350
+    ],
+    [
+      1010,
+      350
+    ],
+    [
+      540,
+      124
+    ],
+    [
+      560,
+      585
+    ],
+    [
+      945,
+      570
+    ]
+  ],
+  "obstacles": [
+    { "x": 390, "y": 32, "w": 340, "h": 34, "kind": "board" },
+    { "x": 510, "y": 303, "w": 100, "h": 93, "kind": "podium" },
+    { "x": 215, "y": 174, "w": 162, "h": 64, "kind": "desk" },
+    { "x": 213, "y": 242, "w": 41, "h": 34, "kind": "chair" },
+    { "x": 745, "y": 174, "w": 162, "h": 64, "kind": "desk" },
+    { "x": 869, "y": 242, "w": 42, "h": 34, "kind": "chair" },
+    { "x": 215, "y": 463, "w": 162, "h": 65, "kind": "desk" },
+    { "x": 213, "y": 533, "w": 41, "h": 34, "kind": "chair" },
+    { "x": 745, "y": 463, "w": 162, "h": 65, "kind": "desk" },
+    { "x": 869, "y": 533, "w": 42, "h": 34, "kind": "chair" }
+  ],
+  "bushes": [
+    { "x": 64, "y": 94, "w": 88, "h": 72, "kind": "plant" },
+    { "x": 970, "y": 465, "w": 88, "h": 70, "kind": "plant" }
+  ],
+  "hazards": [
+    {
+      "type": "quiz",
+      "interval": [
+        8,
+        13
+      ],
+      "warning": 1.35,
+      "duration": 2.3,
+      "damage": 18,
+      "tick": 0.68,
+      "zones": [
+        { "x": 72, "y": 276, "w": 155, "h": 147 },
+        { "x": 891, "y": 275, "w": 155, "h": 147 },
+        { "x": 447, "y": 470, "w": 220, "h": 105 },
+        { "x": 447, "y": 139, "w": 220, "h": 105 }
+      ]
+    }
+  ],
+  "pickups": [
+    {
+      "type": "speed",
+      "x": 398,
+      "y": 347,
+      "amount": 1.33,
+      "duration": 3.8,
+      "respawn": 10
+    },
+    {
+      "type": "speed",
+      "x": 720,
+      "y": 347,
+      "amount": 1.33,
+      "duration": 3.8,
+      "respawn": 10
+    }
+  ]
+}
