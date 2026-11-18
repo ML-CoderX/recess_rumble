@@ -18,6 +18,7 @@ function sprite(path) {
 export function preload(fighters) {
   for (const fighter of fighters) {
     sprite(fighter.sprite.path);
+    if (fighter.sprite.portrait) sprite(fighter.sprite.portrait);
     for (const path of Object.values(fighter.sprite.states ?? {})) sprite(path);
   }
 }

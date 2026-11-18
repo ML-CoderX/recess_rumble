@@ -53,6 +53,15 @@ data = json.loads((frames_dir / "frames.json").read_text())
 atlas = {"version": 1, "frameSize": 256, "directions": 8, "anchor": data["anchor"], "drawSize": 145,
          "animations": {}, "images": []}
 destination = root / "assets/sprites"
+portrait = Image.open(frames_dir / "front.png").convert("RGBA")
+bounds = portrait.getchannel("A").point(lambda a: 255 if a > 32 else 0).getbbox()
+if bounds:
+    portrait = portrait.crop(bounds)
+    scale = min(224 / portrait.width, 232 / portrait.height)
+    portrait = portrait.resize((round(portrait.width * scale), round(portrait.height * scale)), Image.Resampling.LANCZOS)
+    preview = Image.new("RGBA", (256, 256))
+    preview.alpha_composite(portrait, ((256 - portrait.width) // 2, 244 - portrait.height))
+    preview.save(destination / (character + "-portrait.webp"), quality=92, method=6)
 total = 0
 for page, animation in enumerate(data["animations"]):
     state = animation["name"]

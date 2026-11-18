@@ -4,7 +4,11 @@
   "class": "Fast",
   "color": "#ff6b75",
   "stats": { "health": 4, "speed": 9, "damage": 5, "range": 2 },
-  "sprite": { "path": "/assets/sprites/firas.svg", "atlas": "/assets/sprites/firas-3d.json" },
+  "sprite": {
+    "path": "/assets/sprites/firas.svg",
+    "portrait": "/assets/sprites/firas-portrait.webp",
+    "atlas": "/assets/sprites/firas-3d.json"
+  },
   "attack": {
     "name": "Grab & Slam",
     "description": "Grab and slam the nearest rival with the backpack arm.",

@@ -152,7 +152,8 @@ function openMapPicker(multiplayer) {
 
 function portrait(fighter) {
   const img = element("img");
-  img.src = fighter.sprite.path;
+  img.src = fighter.sprite.portrait ?? fighter.sprite.path;
+  img.addEventListener("error", () => { img.src = fighter.sprite.path; }, { once: true });
   img.alt = "";
   img.draggable = false;
   return img;

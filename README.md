@@ -172,7 +172,8 @@ space. Movement drives the walk direction; aim drives attacks and facing.
 
 Character configs retain `sprite.path` as the 2D fallback and add `sprite.atlas`.
 The browser fetches atlases and animation pages as fighters appear, with a bounded
-six-page image cache. The menu uses small 2D portraits. The offline HTML embeds
+six-page image cache. The menu uses small rendered 3D portraits, with the original
+2D portraits as fallbacks. The offline HTML embeds
 all exports for server-free play but decodes animation pages on demand.
 
 Comparison images are in `assets/qa/<id>_compare.png`. The accompanying

@@ -99,6 +99,11 @@ export async function buildSoloPage(fighters, audio = null, maps = null) {
   const roster = [];
   for (const fighter of Object.values(fighters)) {
     const sprite = { path: await embedSprite(fighter.sprite.path), states: {} };
+    if (fighter.sprite.portrait) {
+      try { sprite.portrait = await embedSprite(fighter.sprite.portrait); } catch {
+        // Retain the original portrait when a 3D preview is unavailable.
+      }
+    }
     if (fighter.sprite.atlas) {
       const path = fighter.sprite.atlas;
       if (!/^\/assets\/sprites\/[a-z0-9_-]+\.json$/i.test(path)) throw new Error("Invalid atlas path: " + path);
