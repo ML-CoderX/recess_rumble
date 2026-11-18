@@ -99,6 +99,16 @@ export async function buildSoloPage(fighters, audio = null, maps = null) {
   const roster = [];
   for (const fighter of Object.values(fighters)) {
     const sprite = { path: await embedSprite(fighter.sprite.path), states: {} };
+    if (fighter.sprite.atlas) {
+      const path = fighter.sprite.atlas;
+      if (!/^\/assets\/sprites\/[a-z0-9_-]+\.json$/i.test(path)) throw new Error("Invalid atlas path: " + path);
+      try {
+        const atlas = JSON.parse(await source(path));
+        sprite.atlasData = { ...atlas, images: await Promise.all(atlas.images.map(embedSprite)) };
+      } catch {
+        // Keep the 2D fallback usable if an optional sheet has not been built.
+      }
+    }
     for (const [state, path] of Object.entries(fighter.sprite.states ?? {})) {
       sprite.states[state] = await embedSprite(path);
     }

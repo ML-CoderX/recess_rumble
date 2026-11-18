@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "scripts": { "start": "node server/index.js", "build:solo": "node server/build-solo.js" },
+  "scripts": { "start": "node server/index.js", "build:solo": "node server/build-solo.js", "build:sprites": "node scripts/build-sprites.js" },
   "engines": { "node": ">=22" },
   "dependencies": { "ws": "8.18.3" }
 }

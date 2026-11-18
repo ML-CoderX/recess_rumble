@@ -480,6 +480,7 @@ export class Battle {
       players: this.players.filter(p => !this.hiddenFrom(p, viewer, now)).map(p => ({
         id: p.id, name: p.name, fighter: p.fighter, color: p.color, bot: !!p.bot,
         x: p.x, y: p.y, hp: Math.ceil(p.hp), maxHp: p.maxHp, angle: p.angle, kos: p.kos,
+        moveAngle: Math.atan2(p.vy, p.vx),
         charge: p.charge, napping: p.napping, stunned: p.stunUntil > now,
         hidden: p.revealedUntil <= now && this.map.bushes.some(box => inside(p, box)),
         boosted: p.boostUntil > now,

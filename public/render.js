@@ -1,4 +1,5 @@
 import { clamp, rectangleImpact } from "/shared/arena.js";
+import { AnimatedSprites } from "./animated-sprites.js";
 
 const TAU = Math.PI * 2;
 const mix = (a, b, t) => a + (b - a) * t;
@@ -179,12 +180,14 @@ export class ArenaView {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
+    this.animations = new AnimatedSprites();
     this.poses = new Map();
     this.shots = new Map();
     this.camera = { x: 0, y: 0, scale: 1 };
   }
 
   reset() {
+    this.animations.reset();
     this.poses.clear();
     this.shots.clear();
     this.camera = { x: 0, y: 0, scale: 1 };
@@ -356,19 +359,23 @@ export class ArenaView {
     const walk = !reduced && !stateImage && p.state === "walk";
     const bob = reduced ? 0 : walk ? Math.abs(Math.sin(time * 13)) * 5 : Math.sin(time * 4 + p.x) * 1.2;
     ctx.save();
-    ctx.translate(0, -4 - bob);
-    if (!stateImage && p.state === "defeated") { ctx.rotate(-1.05); ctx.globalAlpha = 0.44; ctx.scale(0.81, 0.81); }
-    else if (!stateImage && p.state === "hurt") { ctx.rotate(0.18); ctx.filter = "brightness(1.35)"; }
-    else if (!stateImage && p.state === "attack") { ctx.rotate(0.13 * Math.sign(Math.cos(angle))); ctx.scale(1.07, 0.94); }
-    else if (!stateImage && p.state === "super") ctx.scale(1.17, 1.13);
-    else if (walk) ctx.rotate(Math.sin(time * 13) * 0.10);
-    if (p.napping) ctx.scale(1.04, 0.89);
-    if (Math.cos(angle) < -0.15) ctx.scale(-1, 1);
-    if (image.complete && image.naturalWidth) {
-      const h = 84, w = h * image.naturalWidth / image.naturalHeight;
-      ctx.drawImage(image, -w / 2, -h + 9, w, h);
-    } else {
-      ellipse(ctx, 0, -23, 24, 31, config.color, "#251e34", 4);
+    const direction = p.state === "walk" && Number.isFinite(p.moveAngle) ? p.moveAngle : angle;
+    const animated = this.animations.draw(ctx, p, config.sprite, direction, time, reduced);
+    if (!animated) {
+      ctx.translate(0, -4 - bob);
+      if (!stateImage && p.state === "defeated") { ctx.rotate(-1.05); ctx.globalAlpha = 0.44; ctx.scale(0.81, 0.81); }
+      else if (!stateImage && p.state === "hurt") { ctx.rotate(0.18); ctx.filter = "brightness(1.35)"; }
+      else if (!stateImage && p.state === "attack") { ctx.rotate(0.13 * Math.sign(Math.cos(angle))); ctx.scale(1.07, 0.94); }
+      else if (!stateImage && p.state === "super") ctx.scale(1.17, 1.13);
+      else if (walk) ctx.rotate(Math.sin(time * 13) * 0.10);
+      if (p.napping) ctx.scale(1.04, 0.89);
+      if (Math.cos(angle) < -0.15) ctx.scale(-1, 1);
+      if (image.complete && image.naturalWidth) {
+        const h = 84, w = h * image.naturalWidth / image.naturalHeight;
+        ctx.drawImage(image, -w / 2, -h + 9, w, h);
+      } else {
+        ellipse(ctx, 0, -23, 24, 31, config.color, "#251e34", 4);
+      }
     }
     ctx.restore();
     if (p.hp) {

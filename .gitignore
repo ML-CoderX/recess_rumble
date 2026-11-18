@@ -1,2 +1,4 @@
 node_modules/
+.sprite-build/
+*.blend1
 .taste-skill/

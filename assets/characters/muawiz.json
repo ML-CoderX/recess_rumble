@@ -4,7 +4,7 @@
   "class": "Ranged",
   "color": "#ffbf54",
   "stats": { "health": 5, "speed": 5, "damage": 8, "range": 8 },
-  "sprite": { "path": "/assets/sprites/muawiz.svg" },
+  "sprite": { "path": "/assets/sprites/muawiz.svg", "atlas": "/assets/sprites/muawiz-3d.json" },
   "attack": {
     "name": "Small Appo",
     "description": "Fling a fast, straight chapati.",

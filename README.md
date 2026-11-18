@@ -132,6 +132,56 @@ Here is a complete example character config. Create the referenced sprite and re
 
 Run `npm run build:solo` after changing voices to embed updated configs and available recordings in the offline game.
 
+## Blender character sprites
+
+Editable sources are in `assets/models/base.blend`, `muawiz.blend`, and
+`firas.blend`. Both characters share the base body and skeleton. Hair, facial
+decals, beard, outfit pieces, sash, chapati, backpack and mechanical links are
+separate named meshes. Reference face textures are packed into each blend file.
+The reconstructed character descriptions are in `assets/reference/<id>/spec.md`.
+The existing three-quarter PNGs supplied the colors and features. The user
+approved reconstructing the unseen side/back details.
+
+Install Blender 5.2 and Python with Pillow (`python -m pip install Pillow`).
+Edit a character blend, save it, and run:
+
+```sh
+npm run build:sprites
+npm run build:solo
+```
+
+Set `BLENDER_PATH` and `PYTHON_PATH` if the programs are installed elsewhere.
+The Windows default Blender path is `C:/Program Files/Blender Foundation/Blender 5.2/blender.exe`.
+The normal command reads saved models and animation data, preserving manual edits.
+`npm run build:sprites -- --character=muawiz` renders one character.
+`--qa-only` renders only front/side/back and regenerates the comparison.
+
+The initial procedural authoring command is
+`npm run build:sprites -- --create-models`. It replaces the character models with
+the scripted starting models, so use it when intentionally rebuilding those
+sources. Animation ranges are marked on the Blender timeline and in the scene's
+`sprite_animations` JSON property. The renderer uses those ranges, frame rates,
+and loop flags. Adjust those metadata ranges if you change animation lengths.
+
+Exports have transparent 256×256 frames, eight directions, and a game camera
+tilted 45 degrees above the ground. Each animation has a compressed WebP sheet
+at most 2048 pixels across, described by `assets/sprites/<id>-3d.json`. Animation
+states are idle, walk, attack, super, hurt, defeat, and Muawiz's nap. Direction
+index zero faces right, with successive indices rotating clockwise in screen
+space. Movement drives the walk direction; aim drives attacks and facing.
+
+Character configs retain `sprite.path` as the 2D fallback and add `sprite.atlas`.
+The browser fetches atlases and animation pages as fighters appear, with a bounded
+six-page image cache. The menu uses small 2D portraits. The offline HTML embeds
+all exports for server-free play but decodes animation pages on demand.
+
+Comparison images are in `assets/qa/<id>_compare.png`. The accompanying
+`fidelity-review.md` records the render/fix iterations and remaining visible
+differences. Side/back panels are labeled reconstructions because those
+orthographic references were absent. To improve fidelity, supply the missing
+`front.png`, `side.png`, `back.png` views, edit the meshes in Blender against the
+spec, and re-run the QA render.
+
 ## Add a fighter from a reference image
 
 1. Put the reference in `assets/reference/`. Note the hair silhouette, facial features, glasses or beard, clothing palette, and signature prop. Draw the character with an oversized head and compact body so the silhouette reads at arena size.
