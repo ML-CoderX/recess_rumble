@@ -18,7 +18,7 @@
       </a>
       <div class="top-actions">
         <span id="connection" class="connection" role="status" hidden></span>
-        <button class="quiet" id="audio-menu" type="button" aria-haspopup="dialog">Audio</button>
+        <button class="quiet" id="audio-menu" type="button" aria-haspopup="dialog">Settings</button>
       </div>
     </header>
     <p class="rotate-hint">Rotate your phone for landscape play.</p>
@@ -95,7 +95,7 @@
       <div class="match-score"><strong id="alive">5</strong> alive <span>·</span> <strong id="kos">0</strong> KOs</div>
       <div id="clock" class="clock">2:00</div>
       <div class="match-actions">
-        <button id="audio-match" type="button" class="quiet" aria-haspopup="dialog">Audio</button>
+        <button id="audio-match" type="button" class="quiet" aria-haspopup="dialog">Settings</button>
         <button id="exit" type="button" class="quiet">Leave</button>
       </div>
     </div>
@@ -107,16 +107,16 @@
     <div id="spectate" class="spectate" hidden>Knocked out · Spectating</div>
     <div id="voice-line" class="voice-line" hidden></div>
     <div class="match-bottom">
-      <div id="move-stick" class="stick" aria-label="Move"><i></i><span>Move</span></div>
       <div class="super-hud">
         <span id="super-label">Super</span>
         <progress id="super-meter" max="100" value="0" aria-label="Super charge"></progress>
         <span id="super-percent">0%</span>
       </div>
-      <div class="touch-attacks">
-        <button id="super-button" type="button" disabled>Super</button>
-        <div id="aim-stick" class="stick" aria-label="Aim and fire"><i></i><span>Attack</span></div>
-      </div>
+    </div>
+    <div id="touch-controls">
+      <div id="move-stick" class="stick" aria-label="Move"><i></i><span>Move</span></div>
+      <div id="aim-stick" class="stick" aria-label="Aim and fire"><i></i><span>Attack</span></div>
+      <button id="super-button" type="button" disabled>Super</button>
     </div>
     <p class="rotate-hint match-rotate-hint">Rotate your phone for landscape play.</p>
     <div id="results" class="results" hidden>
@@ -144,7 +144,8 @@
     <button id="audio-silent" class="quiet" type="button">Start muted</button>
   </dialog>
   <dialog id="audio-settings" class="audio-dialog" aria-labelledby="audio-settings-title">
-    <h2 id="audio-settings-title">Audio settings</h2>
+    <h2 id="audio-settings-title">Settings</h2>
+    <h3>Audio</h3>
     <div class="volume-control">
       <label for="volume-music">Music</label><output id="music-value" for="volume-music"></output>
       <input id="volume-music" type="range" min="0" max="100" step="1">
@@ -158,8 +159,35 @@
       <input id="volume-voices" type="range" min="0" max="100" step="1">
     </div>
     <label class="bots"><input id="audio-mute" type="checkbox"> Mute all audio</label>
+    <section id="controls-settings" aria-labelledby="controls-heading">
+      <h3 id="controls-heading">Controls</h3>
+      <div class="volume-control">
+        <label for="control-scale">Joystick size</label><output id="control-scale-value"></output>
+        <input id="control-scale" type="range" min="60" max="180" step="5">
+        <div class="size-labels"><span>Small</span><span>Medium</span><span>Large</span></div>
+      </div>
+      <div class="volume-control"><label for="control-move">Move size</label><output id="control-move-value"></output><input id="control-move" type="range" min="60" max="180" step="5"></div>
+      <div class="volume-control"><label for="control-attack">Attack size</label><output id="control-attack-value"></output><input id="control-attack" type="range" min="60" max="180" step="5"></div>
+      <div class="volume-control"><label for="control-super">Super size</label><output id="control-super-value"></output><input id="control-super" type="range" min="60" max="180" step="5"></div>
+      <div class="volume-control"><label for="control-opacity">Button opacity</label><output id="control-opacity-value"></output><input id="control-opacity" type="range" min="20" max="100" step="5"></div>
+      <label class="bots"><input id="control-leftHanded" type="checkbox"> Left-handed layout</label>
+      <label class="bots"><input id="control-floating" type="checkbox"> Floating move joystick</label>
+      <label class="bots"><input id="control-assist" type="checkbox"> Aim assist on quick taps</label>
+      <button class="secondary" id="edit-layout" type="button">Edit layout</button>
+    </section>
     <form method="dialog"><button class="primary">Done</button></form>
   </dialog>
+  <dialog id="layout-editor" aria-labelledby="layout-title">
+    <header><strong id="layout-title">Drag controls to reposition</strong>
+      <button id="layout-reset" class="quiet" type="button">Reset to default</button>
+      <button id="layout-save" class="secondary" type="button">Save</button>
+    </header>
+    <div id="layout-preview">
+      <div class="layout-timer">Timer / HUD</div>
+      <div class="layout-meter">Super meter</div>
+    </div>
+  </dialog>
+  <div id="control-safe-area" aria-hidden="true"></div>
 </body>
 </html>
 

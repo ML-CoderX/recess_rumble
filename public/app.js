@@ -3,6 +3,7 @@ import { Battle } from "/shared/battle.js";
 import { ArenaView, drawMapPreview, preload } from "./render.js";
 import { ArenaAudio } from "./arena-audio.js";
 import { enterMobilePresentation } from "./presentation.js";
+import { TouchControls } from "./controls.js";
 
 const $ = id => document.getElementById(id);
 const element = (tag, value, className) => {
@@ -218,6 +219,7 @@ function displayRoom() {
   const running = !!room?.running || !!solo;
   $("menu").hidden = running;
   $("game").hidden = !running;
+  requestAnimationFrame(() => controls.apply());
   document.body.classList.toggle("playing", running);
   if (!running) resetBattle();
   text("room-title", room ? "Your room" : "Play a match");
@@ -471,7 +473,7 @@ if (!offlineCopy) {
 const localPlayer = () => battle?.players.find(p => p.id === self);
 const canPlay = () => (solo || room?.running) && battle && !battle.result && localPlayer()?.hp > 0;
 window.addEventListener("keydown", event => {
-  if ($("audio-settings").open || !canPlay() || !moves.has(event.code) && event.code !== "Space") return;
+  if ($("audio-settings").open || $("layout-editor").open || !canPlay() || !moves.has(event.code) && event.code !== "Space") return;
   if (event.code === "Space" && (event.target instanceof HTMLButtonElement)) return;
   event.preventDefault();
   keys.add(event.code);
@@ -501,69 +503,42 @@ canvas.addEventListener("pointerdown", event => {
 });
 canvas.addEventListener("contextmenu", event => event.preventDefault());
 
-function joystick(id, update) {
-  const node = $(id);
-  const knob = node.querySelector("i");
-  let pointerId = null;
-  function position(event) {
-    const box = node.getBoundingClientRect();
-    const radius = box.width * 0.32;
-    const x = (event.clientX - box.left - box.width / 2) / radius;
-    const y = (event.clientY - box.top - box.height / 2) / radius;
-    const length = Math.max(1, Math.hypot(x, y));
-    const dx = x / length, dy = y / length;
-    knob.style.transform = "translate(" + dx * radius + "px," + dy * radius + "px)";
-    update(dx, dy);
-  }
-  function reset() {
-    if (pointerId !== null && node.hasPointerCapture(pointerId)) node.releasePointerCapture(pointerId);
-    pointerId = null;
-    knob.style.transform = "";
-    update(0, 0);
-  }
-  node.addEventListener("pointerdown", event => {
-    if (!canPlay() || pointerId !== null) return;
-    pointerId = event.pointerId;
-    node.setPointerCapture(pointerId);
-    position(event);
-  });
-  node.addEventListener("pointermove", event => {
-    if (pointerId === event.pointerId) position(event);
-  });
-  for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
-    node.addEventListener(type, event => {
-      if (pointerId === event.pointerId) reset();
-    });
-  }
-  return reset;
-}
-
 let movement = { x: 0, y: 0 };
 let touchFire = false;
-const resetMove = joystick("move-stick", (x, y) => { movement = { x, y }; });
-const resetAim = joystick("aim-stick", (x, y) => {
-  const tilt = Math.hypot(x, y);
-  const firing = tilt > 0.22;
-  if (firing) {
-    pointer = null;
-    aim.angle = Math.atan2(y, x);
-    const range = catalog[chosen]?.super.range ?? 490;
-    aim.reach = range * clamp(tilt, 0.25, 1);
-    if (!touchFire) attackQueued = true;
-  }
-  touchFire = firing;
-});
-$("super-button").addEventListener("pointerdown", () => {
-  if (canPlay() && !$("super-button").disabled) superQueued = true;
-});
-$("super-button").addEventListener("click", event => {
-  if (event.detail === 0 && canPlay()) superQueued = true;
+const controls = new TouchControls({
+  canPlay: () => canPlay() && !$("audio-settings").open && !$("layout-editor").open,
+  clear: () => clearInput(),
+  move: (x, y) => { movement = { x, y }; },
+  aim: (x, y) => {
+    const tilt = Math.hypot(x, y);
+    const firing = tilt > 0.22;
+    if (firing) {
+      pointer = null;
+      aim.angle = Math.atan2(y, x);
+      aim.reach = (catalog[chosen]?.super.range ?? 490) * clamp(tilt, 0.25, 1);
+      if (!touchFire) attackQueued = true;
+    }
+    touchFire = firing;
+  },
+  tapAttack: assist => {
+    if (assist) {
+      const me = localPlayer();
+      const enemies = battle.players.filter(p => p.id !== self && p.hp > 0);
+      const enemy = enemies.sort((a, b) => Math.hypot(a.x - me.x, a.y - me.y) - Math.hypot(b.x - me.x, b.y - me.y))[0];
+      if (enemy) {
+        pointer = null;
+        aim.angle = Math.atan2(enemy.y - me.y, enemy.x - me.x);
+        aim.reach = Math.hypot(enemy.x - me.x, enemy.y - me.y);
+      }
+    }
+    attackQueued = true;
+  },
+  superAttack: () => { superQueued = true; }
 });
 
 function clearInput() {
   keys.clear();
-  resetMove();
-  resetAim();
+  controls.resetInput();
   attackQueued = false;
   superQueued = false;
 }

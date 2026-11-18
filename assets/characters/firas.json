@@ -20,7 +20,15 @@
     "description": "Drop stickers every few seconds that slow rivals.",
     "type": "sticker", "delay": 3.5, "duration": 9, "radius": 26, "slow": 0.64
   },
-  "voiceLines": { "defeated": "I need a new sticker sheet!", "super": "Sticker strike!" },
+  "voiceLines": {
+    "spawn": "Fresh stickers, ready to go!",
+    "win": "That deserves a sticker.",
+    "lose": "I need a new sticker sheet!",
+    "taunt": "Try to keep up!",
+    "super": "Sticker strike!"
+  },
+  "voice": { "name": "", "pitch": 1.15, "rate": 1.12 },
+  "voiceFiles": {},
   "sounds": {
     "attack": "servo", "grab": "clunk", "attackHit": "slam",
     "super": "hum", "zap": "zap", "sticker": "peel", "hurt": "boing", "defeated": "tumble"

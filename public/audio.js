@@ -84,6 +84,7 @@ export class GameAudio {
     if (!this.context) {
       const ctx = this.context = new Context();
       this.effects = ctx.createGain();
+      this.voices = ctx.createGain();
       this.music = ctx.createGain();
       this.duck = ctx.createGain();
       const limiter = ctx.createDynamicsCompressor();
@@ -91,6 +92,7 @@ export class GameAudio {
       limiter.ratio.value = 5;
       limiter.connect(ctx.destination);
       this.effects.connect(limiter);
+      this.voices.connect(limiter);
       this.music.connect(this.duck).connect(limiter);
       const buffer = this.noiseBuffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
       const samples = buffer.getChannelData(0);
@@ -115,6 +117,7 @@ export class GameAudio {
     const t = this.context.currentTime;
     this.music.gain.setTargetAtTime(muted ? 0 : music * 0.52, t, 0.018);
     this.effects.gain.setTargetAtTime(muted ? 0 : effects, t, 0.018);
+    this.voices.gain.setTargetAtTime(muted ? 0 : this.settings.voices, t, 0.018);
   }
 
   preload(cues) {
@@ -267,23 +270,65 @@ export class GameAudio {
     }
   }
 
-  say(text, volume, delay, priority = false) {
-    if (!text || !volume || this.settings.muted || !this.settings.voices || !("speechSynthesis" in window)) return;
+  characterLine(fighter, event, volume = 1, delay = 0, priority = false) {
+    if (!fighter) return;
+    const legacy = event === "lose" ? "defeated" : event;
+    const line = fighter.voiceLines?.[event] ?? fighter.voiceLines?.[legacy];
+    const path = fighter.voiceFiles?.[event] ?? fighter.voiceFiles?.[legacy];
+    this.say(line, volume, delay, priority, { ...fighter.voice, file: path });
+  }
+
+  say(text, volume, delay, priority = false, options = {}) {
+    const isFile = typeof text === "string" && /\.(mp3|ogg)$/i.test(text);
+    const file = options.file ?? (isFile ? text : null);
+    const fallback = isFile ? "" : text;
+    if ((!fallback && !file) || !volume || this.settings.muted || !this.settings.voices) return;
     if (this.voiceBusy && !priority) return;
     this.stopVoice();
     const token = this.voiceToken;
     this.voiceBusy = true;
-    this.voiceTimer = setTimeout(() => {
-      const line = new SpeechSynthesisUtterance(text);
-      line.volume = Math.min(1, volume * this.settings.voices);
-      line.rate = 1.04;
-      this.duckMusic(0.23);
+    this.voiceTimer = setTimeout(async () => {
       const finish = () => {
         if (this.voiceToken !== token) return;
         this.voiceBusy = false;
         clearTimeout(this.voiceTimer);
         this.duckMusic(1);
       };
+      if (file && this.context) {
+        try {
+          let buffer = this.clips.get(file);
+          if (!buffer) {
+            const response = await fetch(file.startsWith("assets/") ? "/" + file : file);
+            if (!response.ok) throw new Error("Voice clip unavailable");
+            buffer = await this.context.decodeAudioData(await response.arrayBuffer());
+            this.clips.set(file, buffer);
+          }
+          if (this.voiceToken !== token) return;
+          const source = this.context.createBufferSource();
+          const gain = this.context.createGain();
+          source.buffer = buffer;
+          gain.gain.value = volume;
+          source.connect(gain).connect(this.voices);
+          source.onended = () => {
+            if (this.voiceSource === source) this.voiceSource = null;
+            gain.disconnect();
+            finish();
+          };
+          this.voiceSource = source;
+          this.duckMusic(0.23);
+          source.start();
+          return;
+        } catch { /* Use the text placeholder if the recording cannot load. */ }
+      }
+      if (this.voiceToken !== token) return;
+      if (!fallback || !("speechSynthesis" in window)) { finish(); return; }
+      const line = new SpeechSynthesisUtterance(fallback);
+      line.volume = Math.min(1, volume * this.settings.voices);
+      line.pitch = Math.min(2, Math.max(0, Number.isFinite(options.pitch) ? options.pitch : 1));
+      line.rate = Math.min(10, Math.max(0.1, Number.isFinite(options.rate) ? options.rate : 1.04));
+      const voice = speechSynthesis.getVoices().find(voice => voice.name === options.name);
+      if (voice) line.voice = voice;
+      this.duckMusic(0.23);
       line.onend = finish;
       line.onerror = finish;
       this.voiceTimer = setTimeout(finish, 6000);
@@ -299,6 +344,10 @@ export class GameAudio {
     this.voiceToken++;
     clearTimeout(this.voiceTimer);
     if (this.voiceBusy) window.speechSynthesis?.cancel();
+    if (this.voiceSource) {
+      this.voiceSource.stop();
+      this.voiceSource = null;
+    }
     this.voiceBusy = false;
     this.duckMusic(1);
   }

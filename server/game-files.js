@@ -102,7 +102,24 @@ export async function buildSoloPage(fighters, audio = null, maps = null) {
     for (const [state, path] of Object.entries(fighter.sprite.states ?? {})) {
       sprite.states[state] = await embedSprite(path);
     }
-    roster.push({ ...fighter, sprite, sounds: await embedSounds(fighter.sounds) });
+    const voiceFiles = {};
+    const voiceLines = { ...fighter.voiceLines };
+    for (const key of new Set([...Object.keys(voiceLines), ...Object.keys(fighter.voiceFiles ?? {})])) {
+      const value = voiceLines[key];
+      const file = fighter.voiceFiles?.[key] ?? (typeof value === "string" && /\.(mp3|ogg)$/i.test(value) ? value : null);
+      if (!file) continue;
+      const path = "/" + file.replace(/^\//, "");
+      if (!/^\/assets\/voices\/[a-z0-9_-]+\/[a-z0-9_-]+\.(mp3|ogg)$/i.test(path)) throw new Error("Invalid voice path: " + file);
+      try {
+        const type = audioTypes[path.split(".").pop().toLowerCase()];
+        voiceFiles[key] = dataUrl(type, await read(path));
+        if (file === value) voiceLines[key] = "";
+      } catch {
+        // Keep optional recordings unavailable so their text placeholders can play.
+        if (file === value) voiceLines[key] = "";
+      }
+    }
+    roster.push({ ...fighter, sprite, voiceLines, voiceFiles, sounds: await embedSounds(fighter.sounds) });
   }
   const html = await source("/public/index.html");
   const css = await source("/public/styles.css");

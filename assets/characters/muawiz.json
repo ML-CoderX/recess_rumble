@@ -20,7 +20,15 @@
     "description": "Stay still for 2 seconds to heal. Incoming hits hurt more while asleep.",
     "type": "nap", "delay": 2, "healing": 29, "vulnerability": 1.35
   },
-  "voiceLines": { "defeated": "Going to Byndoor", "super": "Extra-large appo, coming up!" },
+  "voiceLines": {
+    "spawn": "Five more minutes!",
+    "win": "Greatness needs a good nap.",
+    "lose": "Going to Byndoor",
+    "taunt": "Wake me when you get here.",
+    "super": "Extra-large appo, coming up!"
+  },
+  "voice": { "name": "", "pitch": 0.9, "rate": 0.95 },
+  "voiceFiles": {},
   "sounds": {
     "attack": "whoosh", "attackHit": "splat", "super": "rise",
     "impact": "slam", "superStun": "ring", "nap": "snore",

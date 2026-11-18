@@ -23,6 +23,7 @@ export class ArenaAudio extends GameAudio {
     this.lastEvent = 0;
     this.count = null;
     this.finished = false;
+    this.spawnSpoken = false;
     this.updateNaps([], () => {}, () => 0);
     this.stopVoice();
   }
@@ -36,6 +37,10 @@ export class ArenaAudio extends GameAudio {
       this.play(this.global.start);
     }
     this.count = count;
+    if (!this.spawnSpoken && listener) {
+      this.spawnSpoken = true;
+      this.characterLine(catalog[listener.fighter], "spawn", 1, 150);
+    }
 
     for (const event of state.audio ?? []) {
       if (event.id <= this.lastEvent) continue;
@@ -52,6 +57,8 @@ export class ArenaAudio extends GameAudio {
       this.play(this.global.end);
       if (state.result.winners.length === 1) {
         this.play(state.result.winners.includes(self) ? this.global.win : this.global.lose, { delay: 0.43 });
+        if (listener) this.characterLine(catalog[listener.fighter],
+          state.result.winners.includes(self) ? "win" : "lose", 1, 950, true);
       }
     }
   }
@@ -86,12 +93,12 @@ export class ArenaAudio extends GameAudio {
       case "ko":
         play(this.global.ko, 0.66);
         play(sounds.defeated, 1, 0.13);
-        if (volume >= 0.32) this.say(fighter?.voiceLines?.defeated, volume, 660, event.player === self);
+        if (volume >= 0.32) this.characterLine(fighter, "lose", volume, 660, event.player === self);
         break;
       case "super":
         play(sounds.super);
         play(sounds.zap, 0.9, 0.17);
-        if (volume >= 0.46) this.say(fighter?.voiceLines?.super, volume, 220);
+        if (volume >= 0.46) this.characterLine(fighter, "super", volume, 220);
         break;
       case "grab":
         play(sounds.grab, 0.85, 0.066);

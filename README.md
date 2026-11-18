@@ -59,9 +59,78 @@ Place obstacles and bushes with `{ "x": 100, "y": 100, "w": 80, "h": 60, "kind":
 
 ## Audio
 
-Choose **Start** on the tap-to-start screen to unlock audio. **Audio** in the menu and match HUD opens separate Music, Sound effects, and Voices sliders and a master mute. The browser saves those settings. The Web Audio API synthesizes the effects and looping chiptune. Browser text-to-speech delivers fighter lines when a voice is available on the device, with the music briefly lowered during speech. Your fighter's lines also appear as text. Nearby action sounds louder in both modes.
+Choose **Start** on the tap-to-start screen to unlock audio. **Settings → Audio** in the menu and match HUD opens separate Music, Sound effects, and Voices sliders and a master mute. The browser saves those settings. The Web Audio API synthesizes the effects and looping chiptune. Browser text-to-speech delivers fighter lines when a voice is available on the device, with the music briefly lowered during speech. Your fighter's lines also appear as text. Nearby action sounds louder in both modes.
 
 Global cues are in `assets/audio.json`. Each character's `sounds` object configures their attack, hit, super, and passive effects. To swap a synthesized cue for a clip, put an MP3 or Ogg file in `assets/sounds/` and use a cue object with a `file` path and an optional fallback `preset`. For example, set Muawiz's `attack` cue to `{ "file": "/assets/sounds/appo.mp3", "preset": "whoosh" }`. Restart the server to load the change. Run `npm run build:solo` to embed the clip in the standalone game.
+
+## Mobile controls
+
+Open **Settings → Controls** from the main menu or during a match. The shared size slider scales all three controls, and the Move, Attack, and Super sliders fine-tune them individually. Opacity ranges from 20% to 100%. The default joystick bases are 22% of the shorter screen side, with a 140px minimum, and knobs are 45% of the base. Super starts at 80px or larger. Controls shrink as needed on very small screens to fit the playable area.
+
+Choose **Edit layout**, drag the three outlined controls, then **Save**. **Reset to default** restores the default positions in the preview. Escape or the browser Back action cancels unsaved position edits. Sizes, opacity, presets, and positions are saved in localStorage. Positions use fractions of the viewport and are clamped away from safe areas and the top HUD and super meter after rotation.
+
+**Left-handed layout** mirrors control positions. **Floating move joystick** places movement under your first touch in the movement half of the arena, mirrored to the right for left-handed play. A quick tap on Attack fires toward the nearest visible enemy when **Aim assist** is enabled. Drag Attack to aim manually. Moving, attacking, and Super each track their own finger.
+
+## Changing Character Voices
+
+Each JSON file in `assets/characters/` has a `voiceLines` object. It holds `spawn`, `win`, `lose`, and `taunt` text, plus `super`. Edit the strings to change the speech. Muawiz’s `lose` line is `"Going to Byndoor"`. Spawn plays at the beginning, win and lose play at the result, and lose also plays on defeat. Taunt text is available for custom interactions through the audio controller’s `characterLine(fighter, "taunt")` method.
+
+The `voice` object chooses the TTS voice by its exact `name` and sets its `pitch` and `rate`. An empty or unavailable voice name uses the browser’s default. List voices in the browser console with:
+
+```js
+function listVoices() {
+  console.table(speechSynthesis.getVoices().map(({ name, lang }) => ({ name, lang })));
+}
+listVoices();
+speechSynthesis.addEventListener("voiceschanged", listVoices);
+```
+
+Available voices differ between devices and may load asynchronously. A local voice can speak offline when the device supports it.
+
+For recordings, get the person’s permission and put short MP3 or Ogg clips in `assets/voices/<character>/`. The `voiceFiles` object supplies an optional recording for each event. A recording takes priority, with the corresponding `voiceLines` text used as the fallback if loading or decoding fails. You may also set `voiceLines.lose` directly to `"assets/voices/muawiz/lose.mp3"`, though keeping the text in `voiceLines` and the path in `voiceFiles` provides a spoken fallback.
+
+Keep each clip 1–3 seconds, mono, at a normalized volume, and under 100KB for fast mobile loading. Both recordings and TTS use the **Voices** slider and master mute in Settings, and duck the music during playback.
+
+Here is a complete example character config. Create the referenced sprite and recording, save the JSON in `assets/characters/`, and restart the server. Remove the `voiceFiles` entry to use only TTS.
+
+```json
+{
+  "id": "sleepy-pal",
+  "name": "Sleepy Pal",
+  "class": "Ranged",
+  "color": "#ffbf54",
+  "stats": { "health": 5, "speed": 5, "damage": 8, "range": 8 },
+  "sprite": { "path": "/assets/sprites/sleepy-pal.png" },
+  "attack": {
+    "name": "Small Appo", "description": "Throw a chapati.",
+    "type": "projectile", "cooldown": 0.62, "speed": 690, "charge": 34
+  },
+  "super": {
+    "name": "Appo Smash", "description": "Lob a giant chapati.",
+    "type": "lob", "range": 490, "radius": 86,
+    "damage": 245, "delay": 0.53, "stun": 0.85
+  },
+  "passive": {
+    "name": "Power Nap", "description": "Heal while resting.",
+    "type": "nap", "delay": 2, "healing": 29, "vulnerability": 1.35
+  },
+  "sounds": {
+    "attack": "whoosh", "attackHit": "splat", "super": "rise",
+    "impact": "slam", "nap": "snore", "hurt": "boing", "defeated": "tumble"
+  },
+  "voiceLines": {
+    "spawn": "Five more minutes!",
+    "win": "A dream come true!",
+    "lose": "Going to Byndoor",
+    "taunt": "Wake me when you get here.",
+    "super": "Extra-large appo!"
+  },
+  "voice": { "name": "", "pitch": 0.9, "rate": 0.95 },
+  "voiceFiles": { "lose": "assets/voices/sleepy-pal/lose.mp3" }
+}
+```
+
+Run `npm run build:solo` after changing voices to embed updated configs and available recordings in the offline game.
 
 ## Add a fighter from a reference image
 

@@ -139,7 +139,7 @@ export class Battle {
       target.moving = false;
       this.audio("ko", target, now);
       this.addFeed(now, { text: owner ? owner.name + " KO’d " + target.name : target.name + " flunked the quiz",
-        voice: target.config.voiceLines?.defeated, speaker: target.id });
+        voice: target.config.voiceLines?.lose ?? target.config.voiceLines?.defeated, speaker: target.id });
     }
   }
 
